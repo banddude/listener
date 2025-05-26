@@ -1,0 +1,12 @@
+version: "Apple Swift version 6.0.3 (swiftlang-6.0.3.1.10 clang-1600.0.30.1)"
+options: "2350cb4b513c9d24af31528760ef0c26baef86afbc6f25efc388b77a352f6c42"
+build_start_time: [1748029065, 310486000]
+build_end_time: [1748029070, 321630000]
+inputs:
+  "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/DerivedSources/GeneratedAssetSymbols.swift": [1748029065, 267222874]
+  "/Users/mikeshaffer/listener/listener/CircularAudioBuffer.swift": [1748023313, 865144949]
+  "/Users/mikeshaffer/listener/listener/ContentView.swift": [1748028201, 548015850]
+  "/Users/mikeshaffer/listener/listener/TranscribeAndSummarize.swift": [1748026798, 471469803]
+  "/Users/mikeshaffer/listener/listener/TranscriptionDetailView.swift": [1748028086, 861219105]
+  "/Users/mikeshaffer/listener/listener/VoiceActivityRecorder.swift": [1748028904, 394420095]
+  "/Users/mikeshaffer/listener/listener/listenerApp.swift": [1748022566, 40539111]

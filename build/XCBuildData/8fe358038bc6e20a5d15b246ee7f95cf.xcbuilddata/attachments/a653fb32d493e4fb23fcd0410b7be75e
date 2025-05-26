@@ -1,0 +1,45 @@
+{
+  "" : {
+    "const-values" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/listener-master.swiftconstvalues",
+    "dependencies" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/listener-master.d",
+    "diagnostics" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/listener-master.dia",
+    "emit-module-dependencies" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/listener-master-emit-module.d",
+    "emit-module-diagnostics" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/listener-master-emit-module.dia",
+    "swift-dependencies" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/listener-master.swiftdeps"
+  },
+  "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "index-unit-output-path" : "/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/GeneratedAssetSymbols.o"
+  },
+  "/Users/mikeshaffer/listener/listener/CircularAudioBuffer.swift" : {
+    "index-unit-output-path" : "/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/CircularAudioBuffer.o",
+    "llvm-bc" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/CircularAudioBuffer.bc",
+    "object" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/CircularAudioBuffer.o"
+  },
+  "/Users/mikeshaffer/listener/listener/ContentView.swift" : {
+    "index-unit-output-path" : "/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/ContentView.o"
+  },
+  "/Users/mikeshaffer/listener/listener/TranscribeAndSummarize.swift" : {
+    "index-unit-output-path" : "/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/TranscribeAndSummarize.o",
+    "llvm-bc" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/TranscribeAndSummarize.bc",
+    "object" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/TranscribeAndSummarize.o"
+  },
+  "/Users/mikeshaffer/listener/listener/TranscriptionDetailView.swift" : {
+    "index-unit-output-path" : "/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/TranscriptionDetailView.o",
+    "llvm-bc" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/TranscriptionDetailView.bc",
+    "object" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/TranscriptionDetailView.o"
+  },
+  "/Users/mikeshaffer/listener/listener/VoiceActivityRecorder.swift" : {
+    "index-unit-output-path" : "/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/VoiceActivityRecorder.o",
+    "llvm-bc" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/VoiceActivityRecorder.bc",
+    "object" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/VoiceActivityRecorder.o"
+  },
+  "/Users/mikeshaffer/listener/listener/listenerApp.swift" : {
+    "index-unit-output-path" : "/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/listenerApp.o",
+    "llvm-bc" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/listenerApp.bc",
+    "object" : "/Users/mikeshaffer/listener/build/listener.build/Release-iphoneos/listener.build/Objects-normal/arm64/listenerApp.o"
+  }
+}

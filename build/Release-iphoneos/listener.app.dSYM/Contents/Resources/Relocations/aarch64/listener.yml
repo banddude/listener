@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/mikeshaffer/listener/build/Release-iphoneos/listener.app/listener'
+relocations:     []
+...
