@@ -36,4 +36,64 @@ struct TranscriptionResult: Codable, Identifiable {
     private enum CodingKeys: String, CodingKey {
         case conversation, summary
     }
+}
+
+// MARK: - Speaker ID Server API Models
+
+struct ConversationResponse: Codable {
+    let success: Bool
+    let conversation_id: String
+    let message: String
+}
+
+struct SpeakerIDUtterance: Codable {
+    let id: String
+    let speaker_id: String
+    let speaker_name: String
+    let start_time: String
+    let end_time: String
+    let start_ms: Int
+    let end_ms: Int
+    let text: String
+    let audio_url: String
+}
+
+struct ConversationDetail: Codable {
+    let id: String
+    let conversation_id: String
+    let display_name: String?
+    let date_processed: String?
+    let duration_seconds: Int?
+    let utterances: [SpeakerIDUtterance]
+}
+
+struct Speaker: Codable, Identifiable {
+    let id: String
+    let name: String
+    let utterance_count: Int?
+    let total_duration: Int?
+    
+    // For API responses that might not include counts
+    init(id: String, name: String, utterance_count: Int? = nil, total_duration: Int? = nil) {
+        self.id = id
+        self.name = name
+        self.utterance_count = utterance_count
+        self.total_duration = total_duration
+    }
+}
+
+struct HealthResponse: Codable {
+    let status: String
+    let message: String
+}
+
+struct BackendConversationSummary: Codable, Identifiable {
+    let id: String
+    let conversation_id: String
+    let created_at: String?
+    let duration: Int?
+    let display_name: String?
+    let speaker_count: Int?
+    let utterance_count: Int?
+    let speakers: [String]?
 } 
