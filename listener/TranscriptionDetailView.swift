@@ -9,6 +9,9 @@ import SwiftUI
 #if canImport(UIKit)
 import UIKit
 #endif
+#if canImport(AppKit)
+import AppKit
+#endif
 
 struct TranscriptionDetailView: View {
     let recording: URL
@@ -33,6 +36,7 @@ struct TranscriptionDetailView: View {
                     }
             }
             .navigationTitle(transcriptionResult.summary.title)
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -47,6 +51,21 @@ struct TranscriptionDetailView: View {
                     }
                 }
             }
+            #else
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .primaryAction) {
+                    ShareLink(item: transcriptionJSONText()) {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                }
+            }
+            #endif
         }
     }
     
@@ -75,7 +94,11 @@ struct ConversationView: View {
             }
             .padding()
         }
+        #if os(iOS)
         .background(Color(.systemGroupedBackground))
+        #else
+        .background(Color(NSColor.controlBackgroundColor))
+        #endif
     }
 }
 
@@ -104,7 +127,11 @@ struct ConversationBubble: View {
                     .font(.body)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 12)
+                    #if os(iOS)
                     .background(Color(.systemBackground))
+                    #else
+                    .background(Color(NSColor.textBackgroundColor))
+                    #endif
                     .cornerRadius(12)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
@@ -169,7 +196,11 @@ struct SummaryView: View {
             }
             .padding()
         }
+        #if os(iOS)
         .background(Color(.systemGroupedBackground))
+        #else
+        .background(Color(NSColor.controlBackgroundColor))
+        #endif
     }
 }
 
@@ -191,12 +222,21 @@ struct SummarySection<Content: View>: View {
             content
         }
         .padding()
+        #if os(iOS)
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color(.separator), lineWidth: 0.5)
         )
+        #else
+        .background(Color(NSColor.textBackgroundColor))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.gray.opacity(0.3), lineWidth: 0.5)
+        )
+        #endif
     }
 }
 

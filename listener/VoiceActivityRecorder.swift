@@ -9,6 +9,9 @@ import Foundation
 import AVFoundation
 import Speech
 import SwiftUI
+#if canImport(AppKit)
+import AppKit
+#endif
 
 class VoiceActivityRecorder: NSObject, ObservableObject {
     // MARK: - Published Properties
@@ -730,10 +733,11 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
         }
         print("Recording location: \(url.path)")
         
-        // In a real app, you would use UIActivityViewController here
-        // For now, just copy to clipboard if possible
+        // Share functionality - platform specific
         #if canImport(UIKit)
         UIPasteboard.general.string = url.path
+        #elseif canImport(AppKit)
+        NSPasteboard.general.setString(url.path, forType: .string)
         #endif
     }
     
