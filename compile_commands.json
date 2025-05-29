@@ -1,0 +1,7 @@
+[
+  {
+    "directory": "/Users/mikeshaffer/listener",
+    "command": "swiftc -sdk /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator.sdk -target arm64-apple-ios18.2-simulator -F /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/Library/Frameworks -I /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/lib -module-name listener listener/*.swift listener/DesignSystem/*.swift listener/Views/*.swift",
+    "file": "listener/*.swift"
+  }
+]
