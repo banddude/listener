@@ -23,10 +23,11 @@ struct ConversationDetailView: View {
                     initialSummary: summary,
                     initialDetail: detail,
                     speakerIDService: speakerIDService,
-                    onConversationUpdated: onConversationUpdated
-                ) {
+                    onConversationUpdated: onConversationUpdated,
+                    onNeedsFullReload: {
                         Task { await loadFullConversationData() }
-                }
+                    }
+                )
             } else {
                 // Error state
                 VStack(spacing: 16) {
@@ -491,18 +492,37 @@ struct ConversationDetailContent: View {
     }
     
     private func saveConversationName() {
-        guard let originalName = currentSummary.display_name, editedConversationName != originalName else {
+        guard editedConversationName != currentSummary.display_name else {
             isEditingConversationName = false
             return
         }
         
         Task {
-            // TEMP: Simulate update and dismiss editing
-            print("Call to update display name is commented out. Simulating success.")
-            await MainActor.run {
-                currentSummary.display_name = editedConversationName // Optimistic update
-                isEditingConversationName = false
-                onConversationUpdated?()
+            do {
+                // Use the database ID (not conversation_id) for the API call
+                try await speakerIDService.updateConversationName(
+                    conversationId: currentSummary.id,
+                    newName: editedConversationName
+                )
+                
+                await MainActor.run {
+                    // Update the summary (detail will be updated on next reload)
+                    currentSummary.display_name = editedConversationName
+                    isEditingConversationName = false
+                    
+                    // Immediately notify the parent to refresh the conversations list
+                    print("🔄 ConversationDetailView: Calling onConversationUpdated callback to refresh parent")
+                    onConversationUpdated?()
+                }
+                
+                print("✅ Successfully updated conversation name to: \(editedConversationName)")
+            } catch {
+                print("❌ Failed to update conversation name: \(error)")
+                await MainActor.run {
+                    // Reset to original name on error
+                    editedConversationName = currentSummary.display_name ?? "Untitled Conversation"
+                    isEditingConversationName = false
+                }
             }
         }
     }

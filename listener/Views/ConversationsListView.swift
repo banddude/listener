@@ -65,6 +65,8 @@ struct ConversationsListView: View {
                     if navigationManager.conversationIdToView == conversationId {
                         navigationManager.clearConversationNavigation()
                     }
+                    // Refresh when navigating back
+                    onRefreshRequested?()
                 }
             }
             .task(id: navigationManager.conversationIdToView) {
@@ -74,7 +76,7 @@ struct ConversationsListView: View {
                 }
             }
             .onChange(of: conversations) { _, newValue in
-                // Clear hidden conversations when parent data refreshes (e.g., after manual refresh)
+                // Clear hidden conversations when parent data refreshes
                 hiddenConversations.removeAll()
                 print("🔄 Cleared hidden conversations due to data refresh. Total conversations: \(newValue.count)")
             }

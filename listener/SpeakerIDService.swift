@@ -222,31 +222,39 @@ class SpeakerIDService: ObservableObject {
     // MARK: - Conversation Name Management
     
     func updateConversationName(conversationId: String, newName: String) async throws {
-        // Use conversation.id (not conversation_id) for the API endpoint, matching web UI
+        // Use conversation.id (not conversation_id) for the API endpoint
         let url = URL(string: "\(baseURL)/api/conversations/\(conversationId)")!
         
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
         
-        // Use multipart/form-data like the web UI does
-        let boundary = UUID().uuidString
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        // Use application/x-www-form-urlencoded as per API documentation
+        request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
         
-        var body = Data()
+        // Create URL-encoded body
+        let parameters = ["display_name": newName]
+        let body = parameters
+            .map { key, value in
+                let encodedKey = key.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? key
+                let encodedValue = value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? value
+                return "\(encodedKey)=\(encodedValue)"
+            }
+            .joined(separator: "&")
         
-        // Add display_name field
-        body.append("--\(boundary)\r\n".data(using: .utf8)!)
-        body.append("Content-Disposition: form-data; name=\"display_name\"\r\n\r\n".data(using: .utf8)!)
-        body.append(newName.data(using: .utf8)!)
-        body.append("\r\n".data(using: .utf8)!)
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        request.httpBody = body.data(using: .utf8)
         
-        request.httpBody = body
+        print("🔄 Updating conversation name: \(conversationId) -> \(newName)")
+        print("📤 Request body: \(body)")
         
-        let (_, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
         
         if let httpResponse = response as? HTTPURLResponse {
             print("📡 Conversation name update response: \(httpResponse.statusCode)")
+            
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("📥 Response data: \(responseString)")
+            }
+            
             if httpResponse.statusCode != 200 {
                 throw SpeakerIDError.serverError(httpResponse.statusCode)
             }

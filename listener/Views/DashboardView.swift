@@ -92,6 +92,7 @@ struct DashboardView: View {
     }
     
     private func loadData() {
+        print("🔄 DashboardView: loadData() called - refreshing conversations")
         isLoading = true
         errorMessage = ""
         
@@ -102,11 +103,13 @@ struct DashboardView: View {
                 let loadedConversations = try await conversationsData
                 
                 await MainActor.run {
+                    print("✅ DashboardView: Loaded \(loadedConversations.count) conversations")
                     self.conversations = loadedConversations
                     self.isLoading = false
                 }
             } catch {
                 await MainActor.run {
+                    print("❌ DashboardView: Failed to load conversations: \(error.localizedDescription)")
                     self.errorMessage = "Failed to load data: \(error.localizedDescription)"
                     self.isLoading = false
                 }
