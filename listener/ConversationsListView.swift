@@ -2,6 +2,7 @@ import SwiftUI
 import Foundation
 
 struct ConversationsListView: View {
+    @EnvironmentObject var navigationManager: AppNavigationManager
     let conversations: [BackendConversationSummary]
     let speakerIDService: SpeakerIDService
     let onRefreshRequested: (() -> Void)?
@@ -9,67 +10,84 @@ struct ConversationsListView: View {
     @State private var isRefreshing = false
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Header
-                HStack {
-                    Text("Conversations (\(conversations.count))")
-                        .font(.headline)
-                    
-                    Spacer()
-                    
-                    Button(action: refreshConversations) {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundColor(.blue)
-                            .font(.title2)
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isRefreshing)
-                }
-                
-                // Conversations List
-                if conversations.isEmpty {
-                    VStack(spacing: 16) {
-                        Image(systemName: "bubble.left.and.bubble.right")
-                            .font(.system(size: 48))
-                            .foregroundColor(.gray)
-                        
-                        Text("No conversations found")
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Header
+                    HStack {
+                        Text("Conversations (\(conversations.count))")
                             .font(.headline)
-                            .foregroundColor(.secondary)
                         
-                        Text("Upload an audio file to get started")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 40)
-                } else {
-                    ForEach(conversations, id: \.id) { conversation in
-                        NavigationLink(destination: ConversationDetailView(
-                            conversation: conversation,
-                            speakerIDService: speakerIDService,
-                            onConversationUpdated: onRefreshRequested
-                        )) {
-                            ConversationCard(conversation: conversation)
+                        Spacer()
+                        
+                        Button(action: refreshConversations) {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundColor(.blue)
+                                .font(.title2)
                         }
                         .buttonStyle(.plain)
+                        .disabled(isRefreshing)
+                    }
+                    
+                    // Conversations List
+                    if conversations.isEmpty {
+                        VStack(spacing: 16) {
+                            Image(systemName: "bubble.left.and.bubble.right")
+                                .font(.system(size: 48))
+                                .foregroundColor(.gray)
+                            
+                            Text("No conversations found")
+                                .font(.headline)
+                                .foregroundColor(.secondary)
+                            
+                            Text("Upload an audio file to get started")
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 40)
+                    } else {
+                        ForEach(conversations, id: \.id) { conversation in
+                            NavigationLink(value: conversation.conversation_id) {
+                                ConversationCard(conversation: conversation)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    
+                    if isRefreshing {
+                        HStack {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Loading...")
+                                .foregroundColor(.secondary)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding()
                     }
                 }
-                
-                if isRefreshing {
-                    HStack {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("Loading...")
-                            .foregroundColor(.secondary)
+                .padding()
+                .navigationTitle("Conversations")
+            }
+            .navigationDestination(for: String.self) { conversationId in
+                ConversationDetailView(
+                    conversationId: conversationId,
+                    speakerIDService: speakerIDService,
+                    onConversationUpdated: onRefreshRequested
+                )
+                .onDisappear {
+                    if navigationManager.conversationIdToView == conversationId {
+                        navigationManager.clearConversationNavigation()
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
                 }
             }
-            .padding()
+            .task(id: navigationManager.conversationIdToView) {
+                if navigationManager.selectedTab == .conversations,
+                   let conversationId = navigationManager.conversationIdToView {
+                    print("ConversationsListView: Detected navigation intent to \(conversationId)")
+                }
+            }
         }
     }
     

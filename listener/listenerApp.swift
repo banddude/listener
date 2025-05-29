@@ -9,27 +9,17 @@ import SwiftUI
 
 @main
 struct listenerApp: App {
+    @StateObject private var navigationManager = AppNavigationManager()
+
     var body: some Scene {
         WindowGroup {
             #if os(macOS)
             MacContentView()
+                .environmentObject(navigationManager)
                 .frame(minWidth: 1000, minHeight: 700)
             #else
-            TabView {
-                ContentView()
-                    .tabItem {
-                        Image(systemName: "mic")
-                        Text("Record")
-                    }
-                
-                NavigationView {
-                    DashboardView()
-                }
-                .tabItem {
-                    Image(systemName: "list.bullet")
-                    Text("Dashboard")
-                }
-            }
+            DashboardView()
+                .environmentObject(navigationManager)
             #endif
         }
         #if os(macOS)
@@ -40,6 +30,7 @@ struct listenerApp: App {
 
 #if os(macOS)
 struct MacContentView: View {
+    @EnvironmentObject var navigationManager: AppNavigationManager
     @State private var selectedSidebarItem: SidebarItem = .record
     @StateObject private var audioRecorder = VoiceActivityRecorder()
     @StateObject private var speakerIDService = SpeakerIDService()
