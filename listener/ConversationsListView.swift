@@ -12,17 +12,17 @@ struct ConversationsListView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: AppSpacing.mediumLarge) {
                     // Header
                     HStack {
                         Text("Conversations (\(conversations.count))")
-                            .font(.headline)
+                            .appHeadline()
                         
                         Spacer()
                         
                         Button(action: refreshConversations) {
-                            Image(systemName: "arrow.clockwise")
-                                .foregroundColor(.blue)
+                            Image(systemName: AppIcons.refresh)
+                                .foregroundColor(.accent)
                                 .font(.title2)
                         }
                         .buttonStyle(.plain)
@@ -31,22 +31,11 @@ struct ConversationsListView: View {
                     
                     // Conversations List
                     if conversations.isEmpty {
-                        VStack(spacing: 16) {
-                            Image(systemName: "bubble.left.and.bubble.right")
-                                .font(.system(size: 48))
-                                .foregroundColor(.gray)
-                            
-                            Text("No conversations found")
-                                .font(.headline)
-                                .foregroundColor(.secondary)
-                            
-                            Text("Upload an audio file to get started")
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 40)
+                        AppEmptyState(
+                            icon: AppIcons.noConversations,
+                            title: "No conversations found",
+                            subtitle: "Upload an audio file to get started"
+                        )
                     } else {
                         ForEach(conversations, id: \.id) { conversation in
                             NavigationLink(value: conversation.conversation_id) {
@@ -57,17 +46,10 @@ struct ConversationsListView: View {
                     }
                     
                     if isRefreshing {
-                        HStack {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                            Text("Loading...")
-                                .foregroundColor(.secondary)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
+                        AppLoadingState(message: "Loading...")
                     }
                 }
-                .padding()
+                .padding(AppSpacing.medium)
                 .navigationTitle("Conversations")
             }
             .navigationDestination(for: String.self) { conversationId in

@@ -14,12 +14,11 @@ struct AddSpeakerView: View {
         NavigationView {
             VStack(spacing: 20) {
                 Text("Add New Speaker")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                    .appTitle()
                 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Speaker Name")
-                        .font(.headline)
+                        .appHeadline()
                     
                     TextField("Enter speaker name", text: $speakerName)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
@@ -27,8 +26,8 @@ struct AddSpeakerView: View {
                 
                 if !errorMessage.isEmpty {
                     Text(errorMessage)
-                        .foregroundColor(.red)
-                        .font(.caption)
+                        .foregroundColor(.destructive)
+                        .appCaption()
                 }
                 
                 Button("Add Speaker") {
@@ -44,7 +43,7 @@ struct AddSpeakerView: View {
                 
                 Spacer()
             }
-            .padding()
+            .padding(16)
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -8,25 +8,45 @@
 import SwiftUI
 
 // Define your app's color palette here.
-// It's good practice to use named colors from your asset catalog
-// to support light/dark mode automatically.
+// Colors are extracted from current app usage to maintain exact visual consistency
 
 extension Color {
-    static let primaryBackground = Color("PrimaryBackgroundColor") // Example: Define in Assets.xcassets
-    static let secondaryBackground = Color("SecondaryBackgroundColor")
-    static let primaryText = Color("PrimaryTextColor")
-    static let secondaryText = Color("SecondaryTextColor")
-    static let accent = Color("AccentColor") // Usually defined in Assets.xcassets by default
-
+    // MARK: - Background Colors
+    static let primaryBackground = Color(.systemGroupedBackground) // Used in ListenerView
+    static let secondaryBackground = Color(.secondarySystemGroupedBackground)
+    static let cardBackground = Color(.systemBackground) // For cards and containers
+    
+    // MARK: - Text Colors
+    static let primaryText = Color.primary
+    static let secondaryText = Color.secondary
+    
+    // MARK: - Accent & Brand Colors
+    static let accent = Color.blue // Primary brand color used throughout
+    static let accentLight = Color.blue.opacity(0.1) // For selected states
+    static let accentMedium = Color.blue.opacity(0.15) // For button backgrounds
+    
+    // MARK: - Semantic Colors
     static let destructive = Color.red
+    static let destructiveLight = Color.red.opacity(0.1) // For error backgrounds
     static let success = Color.green
     static let warning = Color.orange
-
-    // You can also define specific UI element colors
+    
+    // MARK: - Status Colors (from app usage)
+    static let recordingActive = Color.green // Recording indicator
+    static let recordingInactive = Color.red // Ready state
+    static let speechDetected = Color.blue // Speech detection
+    static let recordingInProgress = Color.red // Active recording
+    
+    // MARK: - UI Element Colors
+    static let tabSelected = accent
+    static let tabUnselected = Color.gray
+    static let tabSelectedBackground = accentLight
+    
+    // MARK: - Button Colors
     static let buttonPrimaryBackground = accent
     static let buttonPrimaryText = Color.white
-
-    static let cardBackground = Color("CardBackgroundColor")
+    static let buttonSecondaryBackground = accentMedium
+    static let buttonSecondaryText = accent
 }
 
 // Helper for hex colors if needed, though asset catalog is preferred.

@@ -24,29 +24,27 @@ struct UploadView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: AppSpacing.mediumLarge) {
                 // Header
                 Text("Upload")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .padding(.horizontal)
+                    .appTitle()
+                    .padding(.horizontal, AppSpacing.medium)
                 
                 // File Selection Card
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: AppSpacing.mediumSmall) {
                     if let fileURL = selectedFileURL {
-                        HStack(spacing: 12) {
-                            Image(systemName: "doc.fill")
-                                .foregroundColor(.blue)
+                        HStack(spacing: AppSpacing.mediumSmall) {
+                            Image(systemName: AppIcons.document)
+                                .foregroundColor(.accent)
                                 .font(.title2)
                             
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: .leading, spacing: AppSpacing.minimal) {
                                 Text(fileURL.lastPathComponent)
-                                    .font(.headline)
+                                    .appHeadline()
                                 
                                 if let fileSize = getFileSize(fileURL) {
                                     Text(fileSize)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                                        .appCaption()
                                 }
                             }
                             
@@ -56,7 +54,7 @@ struct UploadView: View {
                                 showingFilePicker = true
                             }) {
                                 Image(systemName: "pencil")
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.accent)
                             }
                             .buttonStyle(.plain)
                         }
