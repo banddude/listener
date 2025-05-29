@@ -2,8 +2,8 @@ import SwiftUI
 import Foundation
 
 struct DashboardView: View {
+    @EnvironmentObject var navigationManager: AppNavigationManager
     @StateObject private var speakerIDService = SpeakerIDService()
-    @State private var selectedTab = 0
     @State private var conversations: [BackendConversationSummary] = []
     @State private var isLoading = false
     @State private var errorMessage = ""
@@ -19,37 +19,54 @@ struct DashboardView: View {
             }
             .padding()
             
-            // Compact Tab Navigation
-            HStack(spacing: 0) {
-                SimpleTabButton(
-                    title: "Conversations",
-                    icon: "bubble.left.and.bubble.right",
-                    isSelected: selectedTab == 0,
-                    action: { selectedTab = 0 }
-                )
-                
-                SimpleTabButton(
-                    title: "Speakers",
-                    icon: "person.2",
-                    isSelected: selectedTab == 1,
-                    action: { selectedTab = 1 }
-                )
-                
-                SimpleTabButton(
-                    title: "Upload",
-                    icon: "icloud.and.arrow.up",
-                    isSelected: selectedTab == 2,
-                    action: { selectedTab = 2 }
-                )
-                
-                SimpleTabButton(
-                    title: "Pinecone",
-                    icon: "magnifyingglass",
-                    isSelected: selectedTab == 3,
-                    action: { selectedTab = 3 }
-                )
+            // Responsive Tab Navigation
+            GeometryReader { geometry in
+                HStack(spacing: 0) {
+                    let tabWidth = (geometry.size.width - 16) / 5 // 8pt margin on each side
+                    
+                    ResponsiveTabButton(
+                        title: "Recorder",
+                        icon: "record.circle",
+                        isSelected: navigationManager.selectedTab == .recorder,
+                        width: tabWidth,
+                        action: { navigationManager.selectedTab = .recorder }
+                    )
+                    
+                    ResponsiveTabButton(
+                        title: "Conversations",
+                        icon: "bubble.left.and.bubble.right",
+                        isSelected: navigationManager.selectedTab == .conversations,
+                        width: tabWidth,
+                        action: { navigationManager.selectedTab = .conversations }
+                    )
+                    
+                    ResponsiveTabButton(
+                        title: "Speakers",
+                        icon: "person.2",
+                        isSelected: navigationManager.selectedTab == .speakers,
+                        width: tabWidth,
+                        action: { navigationManager.selectedTab = .speakers }
+                    )
+                    
+                    ResponsiveTabButton(
+                        title: "Upload",
+                        icon: "icloud.and.arrow.up",
+                        isSelected: navigationManager.selectedTab == .upload,
+                        width: tabWidth,
+                        action: { navigationManager.selectedTab = .upload }
+                    )
+                    
+                    ResponsiveTabButton(
+                        title: "Pinecone",
+                        icon: "magnifyingglass",
+                        isSelected: navigationManager.selectedTab == .pinecone,
+                        width: tabWidth,
+                        action: { navigationManager.selectedTab = .pinecone }
+                    )
+                }
+                .padding(.horizontal, 8)
             }
-            .padding(.horizontal)
+            .frame(height: 60)
             .padding(.bottom, 8)
             
             // Content Area
@@ -62,8 +79,10 @@ struct DashboardView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Group {
-                    switch selectedTab {
-                    case 0:
+                    switch navigationManager.selectedTab {
+                    case .recorder:
+                        ListenerView()
+                    case .conversations:
                         ConversationsListView(
                             conversations: conversations,
                             speakerIDService: speakerIDService,
@@ -71,13 +90,11 @@ struct DashboardView: View {
                                 loadData()
                             }
                         )
-                    case 1:
+                    case .speakers:
                         SpeakersListView(speakerIDService: speakerIDService)
-                    case 2:
+                    case .upload:
                         UploadView(speakerIDService: speakerIDService)
-                    case 3:
-                        PineconeManagerView()
-                    default:
+                    case .pinecone:
                         PineconeManagerView()
                     }
                 }
@@ -123,23 +140,36 @@ struct DashboardView: View {
     }
 }
 
-struct SimpleTabButton: View {
+struct ResponsiveTabButton: View {
     let title: String
     let icon: String
     let isSelected: Bool
+    let width: CGFloat
     let action: () -> Void
+    
+    private var fontSize: Font {
+        // Adjust font size based on available width and text length
+        if width < 70 || title.count > 8 {
+            return .caption2
+        } else if width < 80 {
+            return .caption
+        } else {
+            return .footnote
+        }
+    }
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: 4) {
+            VStack(spacing: 3) {
                 Image(systemName: icon)
-                    .font(.system(size: 16))
+                    .font(.system(size: width < 70 ? 12 : 14))
                 Text(title)
-                    .font(.caption)
+                    .font(fontSize)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
             }
             .foregroundColor(isSelected ? .blue : .gray)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 12)
+            .frame(width: width, height: 50)
             .background(
                 isSelected ? Color.blue.opacity(0.1) : Color.clear
             )

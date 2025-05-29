@@ -109,7 +109,7 @@ struct BackendConversationSummary: Codable, Identifiable {
     let conversation_id: String
     let created_at: String?
     let duration: Int?
-    let display_name: String?
+    var display_name: String?
     let speaker_count: Int?
     let utterance_count: Int?
     let speakers: [String]?
