@@ -7,6 +7,7 @@ struct ConversationsListView: View {
     let speakerIDService: SpeakerIDService
     let onRefreshRequested: (() -> Void)?
     
+    @State private var hiddenConversations: Set<String> = []
     @State private var isRefreshing = false
     @State private var showingUploadView = false
     @State private var conversationToDelete: BackendConversationSummary?
@@ -14,93 +15,12 @@ struct ConversationsListView: View {
     @State private var isDeleting = false
     @State private var navigationPath = NavigationPath()
     
+    
     var body: some View {
         NavigationStack(path: $navigationPath) {
             VStack(spacing: 0) {
-                // Header with Upload and Refresh buttons
-                HStack {
-                    Text("Conversations (\(conversations.count))")
-                        .appHeadline()
-                    
-                    Spacer()
-                    
-                    HStack(spacing: AppSpacing.small) {
-                        // Upload button
-                        Button(action: {
-                            showingUploadView = true
-                        }) {
-                            Image(systemName: AppIcons.tabUpload)
-                                .font(.title2)
-                                .foregroundColor(.accent)
-                        }
-                        .buttonStyle(.plain)
-                        
-                        // Refresh button
-                        if let refreshAction = (isRefreshing ? nil : refreshConversations) {
-                            Button(action: refreshAction) {
-                                Image(systemName: AppIcons.refresh)
-                                    .font(.title2)
-                                    .foregroundColor(.accent)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                .padding(.horizontal, AppSpacing.medium)
-                .padding(.vertical, AppSpacing.small)
-                .background(Color(.systemGroupedBackground))
-                
-                // Conversations List
-                if conversations.isEmpty {
-                    Spacer()
-                    AppEmptyState(
-                        icon: AppIcons.noConversations,
-                        title: "No conversations found",
-                        subtitle: "Upload an audio file to get started"
-                    )
-                    Spacer()
-                } else {
-                    List {
-                        ForEach(conversations, id: \.id) { conversation in
-                            Button(action: {
-                                navigationPath.append(conversation.conversation_id)
-                            }) {
-                                ConversationCard(conversation: conversation)
-                            }
-                            .buttonStyle(.plain)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button(role: .destructive) {
-                                    conversationToDelete = conversation
-                                    showingDeleteConfirmation = true
-                                } label: {
-                                    Label("Delete", systemImage: "trash")
-                                }
-                            }
-                        }
-                        
-                        if isRefreshing {
-                            HStack {
-                                Spacer()
-                                AppLoadingState(message: "Loading...")
-                                Spacer()
-                            }
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                        }
-                        
-                        if isDeleting {
-                            HStack {
-                                Spacer()
-                                AppLoadingState(message: "Deleting conversation...")
-                                Spacer()
-                            }
-                            .listRowBackground(Color.clear)
-                            .listRowSeparator(.hidden)
-                        }
-                    }
-                    .listStyle(.plain)
-                    .background(Color(.systemGroupedBackground))
-                }
+                buildHeader()
+                buildMainContent()
             }
             .background(Color(.systemGroupedBackground))
             .sheet(isPresented: $showingUploadView) {
@@ -110,16 +30,11 @@ struct ConversationsListView: View {
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
                             ToolbarItem(placement: .navigationBarTrailing) {
-                                Button("Done") {
-                                    showingUploadView = false
-                                }
+                                Button("Done") { showingUploadView = false }
                             }
                         }
                 }
-                .onDisappear {
-                    // Refresh conversations when upload view is dismissed
-                    onRefreshRequested?()
-                }
+                .onDisappear { onRefreshRequested?() }
             }
             .confirmationDialog(
                 "Delete Conversation",
@@ -158,6 +73,74 @@ struct ConversationsListView: View {
                     print("ConversationsListView: Detected navigation intent to \(conversationId)")
                 }
             }
+            .onChange(of: conversations) { _, newValue in
+                // Clear hidden conversations when parent data refreshes (e.g., after manual refresh)
+                hiddenConversations.removeAll()
+                print("🔄 Cleared hidden conversations due to data refresh. Total conversations: \(newValue.count)")
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func buildHeader() -> some View {
+        HStack {
+            Text("Conversations (\(conversations.filter { !hiddenConversations.contains($0.id) }.count))")
+                .appHeadline()
+            Spacer()
+            HStack(spacing: AppSpacing.small) {
+                Button(action: { showingUploadView = true }) {
+                    Image(systemName: AppIcons.tabUpload)
+                        .font(.title2)
+                        .foregroundColor(.accent)
+                }
+                .buttonStyle(.plain)
+                
+                if !isRefreshing {
+                    Button(action: refreshConversations) {
+                        Image(systemName: AppIcons.refresh)
+                            .font(.title2)
+                            .foregroundColor(.accent)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.horizontal, AppSpacing.medium)
+        .padding(.vertical, AppSpacing.small)
+        .background(Color(.systemGroupedBackground))
+    }
+    
+    @ViewBuilder
+    private func buildMainContent() -> some View {
+        let filteredConversations = conversations.filter { !hiddenConversations.contains($0.id) }
+        
+        if filteredConversations.isEmpty {
+            Spacer()
+            AppEmptyState(
+                icon: AppIcons.noConversations,
+                title: "No conversations found",
+                subtitle: "Upload an audio file to get started"
+            )
+            Spacer()
+        } else {
+            List(filteredConversations, id: \.id) { conversation in
+                Button(action: {
+                    navigationPath.append(conversation.conversation_id)
+                }) {
+                    ConversationCard(conversation: conversation)
+                }
+                .buttonStyle(.plain)
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button(role: .destructive) {
+                        conversationToDelete = conversation
+                        showingDeleteConfirmation = true
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
+            }
+            .listStyle(.plain)
+            .background(Color(.systemGroupedBackground))
         }
     }
     
@@ -214,16 +197,20 @@ struct ConversationsListView: View {
                     await MainActor.run {
                         self.isDeleting = false
                         self.conversationToDelete = nil
-                        // Refresh the conversations list
-                        self.onRefreshRequested?()
+                        // Hide the conversation to maintain scroll position
+                        self.hiddenConversations.insert(conversationId)
+                        let remainingCount = self.conversations.filter { !self.hiddenConversations.contains($0.id) }.count
+                        print("🎯 Hid conversation from list. Visible remaining: \(remainingCount)")
                     }
                 } else if httpResponse.statusCode == 404 {
                     await MainActor.run {
                         self.isDeleting = false
                         self.conversationToDelete = nil
                         print("⚠️ Conversation not found (already deleted?)")
-                        // Still refresh to update the UI
-                        self.onRefreshRequested?()
+                        // Hide from local state anyway
+                        self.hiddenConversations.insert(conversationId)
+                        let remainingCount = self.conversations.filter { !self.hiddenConversations.contains($0.id) }.count
+                        print("🎯 Hid conversation from list (404 case). Visible remaining: \(remainingCount)")
                     }
                 } else {
                     let errorResponse = String(data: data, encoding: .utf8) ?? "Unknown error"

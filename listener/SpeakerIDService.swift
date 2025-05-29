@@ -46,6 +46,21 @@ class SpeakerIDService: ObservableObject {
         }
     }
     
+    func uploadConversation(audioData: Data, filename: String, notes: String? = nil, matchThreshold: Double = 0.40, autoUpdateThreshold: Double = 0.50) async throws -> ConversationResponse {
+        isUploading = true
+        errorMessage = ""
+        
+        do {
+            let response = try await uploadAudioData(data: audioData, filename: filename, displayName: notes, matchThreshold: matchThreshold, autoUpdateThreshold: autoUpdateThreshold)
+            isUploading = false
+            return response
+        } catch {
+            isUploading = false
+            errorMessage = "Upload failed: \(error.localizedDescription)"
+            throw error
+        }
+    }
+    
     func getConversationDetails(conversationId: String) async throws -> ConversationDetail {
         // First, find the conversation in the list to get the database ID
         let conversations = try await getAllConversations()
@@ -468,6 +483,106 @@ class SpeakerIDService: ObservableObject {
         
         return try JSONDecoder().decode(ConversationResponse.self, from: data)
     }
+    
+    private func uploadAudioData(data: Data, filename: String, displayName: String?, matchThreshold: Double = 0.40, autoUpdateThreshold: Double = 0.50) async throws -> ConversationResponse {
+        let uploadURL = URL(string: "\(baseURL)/api/conversations/upload")!
+        
+        print("🚀 Uploading data to: \(uploadURL.absoluteString)")
+        print("📁 Data size: \(data.count) bytes")
+        
+        var request = URLRequest(url: uploadURL)
+        request.httpMethod = "POST"
+        
+        // Set a very long timeout for the upload since transcription takes time
+        request.timeoutInterval = 300.0 // 5 minutes
+        
+        let boundary = UUID().uuidString
+        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        
+        var body = Data()
+        
+        // Add audio file with proper filename and content type
+        let dummyURL = URL(fileURLWithPath: filename)
+        let contentType = getContentType(for: dummyURL)
+        
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"file\"; filename=\"\(filename)\"\r\n".data(using: .utf8)!)
+        body.append("Content-Type: \(contentType)\r\n\r\n".data(using: .utf8)!)
+        body.append(data)
+        body.append("\r\n".data(using: .utf8)!)
+        
+        // Add display name if provided (exactly as web frontend does)
+        if let displayName = displayName {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"display_name\"\r\n\r\n".data(using: .utf8)!)
+            body.append(displayName.data(using: .utf8)!)
+            body.append("\r\n".data(using: .utf8)!)
+        }
+        
+        // Add match threshold (converted to string as expected by API)
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"match_threshold\"\r\n\r\n".data(using: .utf8)!)
+        body.append(String(matchThreshold).data(using: .utf8)!)
+        body.append("\r\n".data(using: .utf8)!)
+        
+        // Add auto update threshold (converted to string as expected by API)
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"auto_update_threshold\"\r\n\r\n".data(using: .utf8)!)
+        body.append(String(autoUpdateThreshold).data(using: .utf8)!)
+        body.append("\r\n".data(using: .utf8)!)
+        
+        // End multipart body
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        request.httpBody = body
+        
+        // Create session with increased resource timeout
+        let configuration = URLSessionConfiguration.default
+        configuration.timeoutIntervalForResource = 600.0 // 10 minutes
+        let session = URLSession(configuration: configuration)
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw SpeakerIDError.invalidResponse
+        }
+        
+        print("📋 Response status: \(httpResponse.statusCode)")
+        print("📋 Response headers: \(httpResponse.allHeaderFields)")
+        
+        // Special handling for 500 errors - sometimes the upload succeeds but returns 500 due to backend bug
+        if httpResponse.statusCode == 500 {
+            print("⚠️ Got 500 error, checking if upload actually succeeded...")
+            do {
+                let conversations = try await getAllConversations()
+                if let latestConversation = conversations.first {
+                    let latestTime = DateUtilities.parseISODate(latestConversation.created_at ?? "")?.timeIntervalSince1970 ?? 0
+                    let uploadTime = Date().timeIntervalSince1970
+                    
+                    // If the latest conversation was created within the last 30 seconds, assume it's our upload
+                    if uploadTime - latestTime < 30 {
+                        print("✅ Found recent conversation, upload likely succeeded despite 500 error")
+                        return ConversationResponse(
+                            success: true,
+                            conversation_id: latestConversation.conversation_id,
+                            message: "Upload successful despite backend response error"
+                        )
+                    }
+                }
+            } catch {
+                print("❌ Failed to check for recent conversations: \(error)")
+            }
+        }
+        
+        // Handle other server errors
+        if httpResponse.statusCode >= 400 {
+            print("❌ Server error: \(httpResponse.statusCode)")
+            throw SpeakerIDError.serverError(httpResponse.statusCode)
+        }
+        
+        return try JSONDecoder().decode(ConversationResponse.self, from: data)
+    }
+    
     
     private func performRequest<T: Codable>(
         url: URL,

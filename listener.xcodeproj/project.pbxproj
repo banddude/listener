@@ -6,11 +6,56 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		E133EADF2DE903260013A887 /* ListenerShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E1B46AF02DE0F000002C59ED /* ListenerShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		E133EAE02DE903C70013A887 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1B46AF12DE0F000002C59ED /* ShareViewController.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E1B46AFC2DE0F000002C59ED /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E1B46ACD2DE0ECA6002C59ED /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E1B46AF82DE0F000002C59ED;
+			remoteInfo = ListenerShareExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E1B46AF62DE0F000002C59ED /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E133EADF2DE903260013A887 /* ListenerShareExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		E133EADE2DE8F6280013A887 /* ListenerShareExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ListenerShareExtension.entitlements; sourceTree = "<group>"; };
 		E1B46AD52DE0ECA6002C59ED /* listener.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = listener.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E1B46AF02DE0F000002C59ED /* ListenerShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ListenerShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		E1B46AF12DE0F000002C59ED /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		E1B46AF22DE0F000002C59ED /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E1B46AF32DE0F000002C59ED /* MainInterface.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = MainInterface.storyboard; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		E133EAE42DE90C100013A887 /* Exceptions for "listener" folder in "ListenerShareExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				AppConstants.swift,
+				DataModels.swift,
+				DateUtilities.swift,
+				SharedAudioManager.swift,
+				SpeakerIDService.swift,
+			);
+			target = E1B46AF82DE0F000002C59ED /* ListenerShareExtension */;
+		};
 		E1B46AEF2DE0EF97002C59ED /* Exceptions for "listener" folder in "listener" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -25,6 +70,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				E1B46AEF2DE0EF97002C59ED /* Exceptions for "listener" folder in "listener" target */,
+				E133EAE42DE90C100013A887 /* Exceptions for "listener" folder in "ListenerShareExtension" target */,
 			);
 			path = listener;
 			sourceTree = "<group>";
@@ -39,6 +85,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E1B46AF42DE0F000002C59ED /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -46,6 +99,7 @@
 			isa = PBXGroup;
 			children = (
 				E1B46AD72DE0ECA6002C59ED /* listener */,
+				E1B46AF52DE0F000002C59ED /* ListenerShareExtension */,
 				E1B46AD62DE0ECA6002C59ED /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,8 +108,20 @@
 			isa = PBXGroup;
 			children = (
 				E1B46AD52DE0ECA6002C59ED /* listener.app */,
+				E1B46AF02DE0F000002C59ED /* ListenerShareExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		E1B46AF52DE0F000002C59ED /* ListenerShareExtension */ = {
+			isa = PBXGroup;
+			children = (
+				E133EADE2DE8F6280013A887 /* ListenerShareExtension.entitlements */,
+				E1B46AF12DE0F000002C59ED /* ShareViewController.swift */,
+				E1B46AF32DE0F000002C59ED /* MainInterface.storyboard */,
+				E1B46AF22DE0F000002C59ED /* Info.plist */,
+			);
+			path = ListenerShareExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -68,10 +134,12 @@
 				E1B46AD12DE0ECA6002C59ED /* Sources */,
 				E1B46AD22DE0ECA6002C59ED /* Frameworks */,
 				E1B46AD32DE0ECA6002C59ED /* Resources */,
+				E1B46AF62DE0F000002C59ED /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				E1B46AF72DE0F000002C59ED /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				E1B46AD72DE0ECA6002C59ED /* listener */,
@@ -82,6 +150,25 @@
 			productName = listener;
 			productReference = E1B46AD52DE0ECA6002C59ED /* listener.app */;
 			productType = "com.apple.product-type.application";
+		};
+		E1B46AF82DE0F000002C59ED /* ListenerShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E1B46AF92DE0F000002C59ED /* Build configuration list for PBXNativeTarget "ListenerShareExtension" */;
+			buildPhases = (
+				E1B46AFA2DE0F000002C59ED /* Sources */,
+				E1B46AF42DE0F000002C59ED /* Frameworks */,
+				E1B46AFB2DE0F000002C59ED /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ListenerShareExtension;
+			packageProductDependencies = (
+			);
+			productName = ListenerShareExtension;
+			productReference = E1B46AF02DE0F000002C59ED /* ListenerShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -113,12 +200,20 @@
 			projectRoot = "";
 			targets = (
 				E1B46AD42DE0ECA6002C59ED /* listener */,
+				E1B46AF82DE0F000002C59ED /* ListenerShareExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		E1B46AD32DE0ECA6002C59ED /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E1B46AFB2DE0F000002C59ED /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -135,7 +230,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E1B46AFA2DE0F000002C59ED /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E133EAE02DE903C70013A887 /* ShareViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E1B46AF72DE0F000002C59ED /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E1B46AF82DE0F000002C59ED /* ListenerShareExtension */;
+			targetProxy = E1B46AFC2DE0F000002C59ED /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		E1B46AE12DE0ECA7002C59ED /* Debug */ = {
@@ -268,6 +379,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = listener/listener.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"listener/Preview Content\"";
@@ -302,6 +414,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = listener/listener.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"listener/Preview Content\"";
@@ -331,6 +444,62 @@
 			};
 			name = Release;
 		};
+		E1B46AFD2DE0F000002C59ED /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ListenerShareExtension/ListenerShareExtension.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6D4T7VB2AF;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ListenerShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Add to Listener";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mikeshaffer.listener.ListenerShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E1B46AFE2DE0F000002C59ED /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = ListenerShareExtension/ListenerShareExtension.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 6D4T7VB2AF;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ListenerShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Add to Listener";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.mikeshaffer.listener.ListenerShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -348,6 +517,15 @@
 			buildConfigurations = (
 				E1B46AE42DE0ECA7002C59ED /* Debug */,
 				E1B46AE52DE0ECA7002C59ED /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E1B46AF92DE0F000002C59ED /* Build configuration list for PBXNativeTarget "ListenerShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E1B46AFD2DE0F000002C59ED /* Debug */,
+				E1B46AFE2DE0F000002C59ED /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

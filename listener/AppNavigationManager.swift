@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum TabIdentifier: Hashable {
-    case recorder, conversations, speakers
+    case recorder, conversations, speakers, sharedUploads
 }
 
 class AppNavigationManager: ObservableObject {

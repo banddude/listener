@@ -126,12 +126,14 @@ struct AppScrollContainer<Content: View>: View {
 
 struct AppSectionHeader: View {
     let title: String
+    let subtitle: String?
     let actionIcon: String?
     let actionColor: Color
     let action: (() -> Void)?
     
-    init(title: String, actionIcon: String? = nil, actionColor: Color = .accent, action: (() -> Void)? = nil) {
+    init(title: String, subtitle: String? = nil, actionIcon: String? = nil, actionColor: Color = .accent, action: (() -> Void)? = nil) {
         self.title = title
+        self.subtitle = subtitle
         self.actionIcon = actionIcon
         self.actionColor = actionColor
         self.action = action
@@ -139,8 +141,16 @@ struct AppSectionHeader: View {
     
     var body: some View {
         HStack {
-            Text(title)
-                .appHeadline()
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .appHeadline()
+                
+                if let subtitle = subtitle {
+                    Text(subtitle)
+                        .appCaption()
+                        .foregroundColor(.secondaryText)
+                }
+            }
             
             Spacer()
             

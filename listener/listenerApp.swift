@@ -10,6 +10,7 @@ import SwiftUI
 @main
 struct listenerApp: App {
     @StateObject private var navigationManager = AppNavigationManager()
+    @StateObject private var sharedAudioManager = SharedAudioManager.shared
 
     var body: some Scene {
         WindowGroup {
@@ -25,6 +26,15 @@ struct listenerApp: App {
         #if os(macOS)
         .windowResizability(.contentSize)
         #endif
+        .onChange(of: AppLifecycleManager.shared.isActive) { _, isActive in
+            if isActive {
+                // Auto-process any pending uploads when app becomes active
+                Task {
+                    sharedAudioManager.loadPendingUploads()
+                    await sharedAudioManager.processAllPendingUploads()
+                }
+            }
+        }
     }
 }
 

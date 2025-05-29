@@ -21,7 +21,7 @@ struct DashboardView: View {
             // Responsive Tab Navigation
             GeometryReader { geometry in
                 HStack(spacing: 0) {
-                    let tabWidth = (geometry.size.width - AppSpacing.medium) / 3 // 3 tabs now instead of 4
+                    let tabWidth = (geometry.size.width - AppSpacing.medium) / 4 // 4 tabs now
                     
                     AppTabButton(
                         title: "Recorder",
@@ -43,6 +43,13 @@ struct DashboardView: View {
                         isSelected: navigationManager.selectedTab == .speakers,
                         width: tabWidth
                     ) { navigationManager.selectedTab = .speakers }
+                    
+                    AppTabButton(
+                        title: "Shared",
+                        iconName: AppIcons.tabSharedUploads,
+                        isSelected: navigationManager.selectedTab == .sharedUploads,
+                        width: tabWidth
+                    ) { navigationManager.selectedTab = .sharedUploads }
                 }
                 .padding(.horizontal, AppSpacing.small)
             }
@@ -67,6 +74,8 @@ struct DashboardView: View {
                         }
                     case .speakers:
                         SpeakersListView(speakerIDService: speakerIDService)
+                    case .sharedUploads:
+                        SharedUploadsView()
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)

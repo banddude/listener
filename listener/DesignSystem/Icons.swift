@@ -51,6 +51,7 @@ struct AppIcons {
     static let tabRecorder = "record.circle"
     static let tabConversations = "bubble.left.and.bubble.right"
     static let tabSpeakers = "person.2"
+    static let tabSharedUploads = "tray.and.arrow.down"
     static let tabUpload = "icloud.and.arrow.up"
     static let tabPinecone = "magnifyingglass"
     

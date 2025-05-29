@@ -104,7 +104,7 @@ struct UtterancePineconeResponse: Codable {
     let message: String
 }
 
-struct BackendConversationSummary: Codable, Identifiable {
+struct BackendConversationSummary: Codable, Identifiable, Equatable {
     let id: String
     let conversation_id: String
     let created_at: String?
@@ -113,6 +113,10 @@ struct BackendConversationSummary: Codable, Identifiable {
     let speaker_count: Int?
     let utterance_count: Int?
     let speakers: [String]?
+    
+    static func == (lhs: BackendConversationSummary, rhs: BackendConversationSummary) -> Bool {
+        return lhs.id == rhs.id
+    }
 }
 
 // MARK: - Pinecone Models (shared between PineconeManagerView and SpeakerIDService)
