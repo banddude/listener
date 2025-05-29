@@ -29,7 +29,9 @@ extension Color {
     static let destructive = Color.red
     static let destructiveLight = Color.red.opacity(0.1) // For error backgrounds
     static let success = Color.green
+    static let successLight = Color.green.opacity(0.1) // For success backgrounds
     static let warning = Color.orange
+    static let warningLight = Color.orange.opacity(0.1) // For warning backgrounds
     
     // MARK: - Status Colors (from app usage)
     static let recordingActive = Color.green // Recording indicator
