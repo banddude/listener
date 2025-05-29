@@ -59,7 +59,7 @@ struct UploadView: View {
                             .buttonStyle(.plain)
                         }
                         .padding()
-                        .background(Color.gray.opacity(0.1))
+                        .background(Color.lightGrayBackground)
                         .cornerRadius(12)
                     } else {
                         Button(action: {
@@ -68,20 +68,20 @@ struct UploadView: View {
                             HStack(spacing: 12) {
                                 Image(systemName: "icloud.and.arrow.up")
                                     .font(.title2)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.accent)
                                 
                                 Text("Select Audio File")
                                     .font(.headline)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.accent)
                                 
                                 Spacer()
                             }
                             .padding()
-                            .background(Color.blue.opacity(0.1))
+                            .background(Color.lightGrayBackground)
                             .cornerRadius(12)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.blue, style: StrokeStyle(lineWidth: 1, dash: [5]))
+                                    .stroke(Color.accent, style: StrokeStyle(lineWidth: 1, dash: [5]))
                             )
                         }
                         .buttonStyle(.plain)
@@ -95,7 +95,7 @@ struct UploadView: View {
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                 }
                 .padding()
-                .background(Color.gray.opacity(0.1))
+                .background(Color.lightGrayBackground)
                 .cornerRadius(12)
                 .padding(.horizontal)
                 
@@ -114,7 +114,7 @@ struct UploadView: View {
                                 .foregroundColor(.secondary)
                         }
                         Slider(value: $matchThreshold, in: 0.1...0.9, step: 0.05)
-                            .accentColor(.blue)
+                            .accentColor(.accent)
                         
                         HStack {
                             Text("Auto-Update Threshold")
@@ -125,11 +125,11 @@ struct UploadView: View {
                                 .foregroundColor(.secondary)
                         }
                         Slider(value: $autoUpdateThreshold, in: 0.1...0.9, step: 0.05)
-                            .accentColor(.blue)
+                            .accentColor(.accent)
                     }
                 }
                 .padding()
-                .background(Color.gray.opacity(0.1))
+                .background(Color.lightGrayBackground)
                 .cornerRadius(12)
                 .padding(.horizontal)
                 
@@ -149,7 +149,7 @@ struct UploadView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(selectedFileURL != nil && !isUploading ? Color.blue : Color.gray)
+                    .background(selectedFileURL != nil && !isUploading ? Color.accent : Color.mediumGrayBackground)
                     .foregroundColor(.white)
                     .cornerRadius(12)
                 }
@@ -168,10 +168,10 @@ struct UploadView: View {
                         }
                         
                         ProgressView(value: uploadProgress)
-                            .progressViewStyle(LinearProgressViewStyle(tint: .blue))
+                            .progressViewStyle(LinearProgressViewStyle(tint: .accent))
                     }
                     .padding()
-                    .background(Color.blue.opacity(0.1))
+                    .background(Color.lightGrayBackground)
                     .cornerRadius(12)
                     .padding(.horizontal)
                 }
@@ -180,13 +180,13 @@ struct UploadView: View {
                 if !uploadMessage.isEmpty {
                     HStack {
                         Image(systemName: "info.circle")
-                            .foregroundColor(.blue)
+                            .foregroundColor(.accent)
                         Text(uploadMessage)
                             .font(.subheadline)
-                            .foregroundColor(.blue)
+                            .foregroundColor(.accent)
                     }
                     .padding()
-                    .background(Color.blue.opacity(0.1))
+                    .background(Color.lightGrayBackground)
                     .cornerRadius(12)
                     .padding(.horizontal)
                 }
@@ -194,13 +194,13 @@ struct UploadView: View {
                 if !errorMessage.isEmpty {
                     HStack {
                         Image(systemName: "exclamationmark.triangle")
-                            .foregroundColor(.red)
+                            .foregroundColor(.destructive)
                         Text(errorMessage)
                             .font(.subheadline)
-                            .foregroundColor(.red)
+                            .foregroundColor(.destructive)
                     }
                     .padding()
-                    .background(Color.red.opacity(0.1))
+                    .background(Color.destructiveLight)
                     .cornerRadius(12)
                     .padding(.horizontal)
                 }
@@ -210,11 +210,11 @@ struct UploadView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
+                                .foregroundColor(.success)
                                 .font(.title2)
                             Text("Upload Complete!")
                                 .font(.headline)
-                                .foregroundColor(.green)
+                                .foregroundColor(.success)
                         }
                         
                         Text(result.message)
@@ -226,7 +226,7 @@ struct UploadView: View {
                         .buttonStyle(.borderedProminent)
                     }
                     .padding()
-                    .background(Color.green.opacity(0.1))
+                    .background(Color.successLight)
                     .cornerRadius(12)
                     .padding(.horizontal)
                 }

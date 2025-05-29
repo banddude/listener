@@ -24,12 +24,14 @@ struct PineconeManagerView: View {
                     Spacer()
                     
                     // Only refresh button now
-                    Button(action: refreshSpeakers) {
-                        Image(systemName: "arrow.clockwise")
-                            .foregroundColor(.blue)
-                            .font(.title2)
+                    AppIconButton(
+                        iconName: "arrow.clockwise",
+                        size: 36,
+                        backgroundColor: Color.accent,
+                        foregroundColor: .white
+                    ) {
+                        refreshSpeakers()
                     }
-                    .buttonStyle(.plain)
                     .disabled(isLoading)
                 }
                 
@@ -41,14 +43,14 @@ struct PineconeManagerView: View {
                         
                         Spacer()
                         
-                        Button(action: {
+                        AppIconButton(
+                            iconName: "plus",
+                            size: 36,
+                            backgroundColor: Color.success,
+                            foregroundColor: .white
+                        ) {
                             showingAddSpeaker = true
-                        }) {
-                            Image(systemName: "plus")
-                                .foregroundColor(.green)
-                                .font(.title2)
                         }
-                        .buttonStyle(.plain)
                     }
                     
                     if speakers.isEmpty && !isLoading {
@@ -239,29 +241,29 @@ struct PineconeSpeakerCard: View {
                             }
                         }) {
                             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color.accent)
                         }
                         .buttonStyle(.plain)
                     }
                     
-                    Button(action: {
+                    AppIconButton(
+                        iconName: "plus.circle",
+                        size: 36,
+                        backgroundColor: Color.success,
+                        foregroundColor: .white
+                    ) {
                         print("🔵 PineconeSpeakerCard: Add button pressed for speaker: '\(speaker.name)'")
                         onAddEmbedding(speaker.name)
-                    }) {
-                        Image(systemName: "plus.circle")
-                            .foregroundColor(.green)
-                            .font(.title2)
                     }
-                    .buttonStyle(.plain)
                     
-                    Button(action: {
+                    AppIconButton(
+                        iconName: "trash",
+                        size: 36,
+                        backgroundColor: Color.destructive,
+                        foregroundColor: .white
+                    ) {
                         showingDeleteConfirmation = true
-                    }) {
-                        Image(systemName: "trash")
-                            .foregroundColor(.red)
-                            .font(.title2)
                     }
-                    .buttonStyle(.plain)
                 }
             }
             
@@ -283,7 +285,7 @@ struct PineconeSpeakerCard: View {
                                 onDeleteEmbedding(embedding.id)
                             }) {
                                 Image(systemName: "trash")
-                                    .foregroundColor(.red)
+                                    .foregroundColor(Color.destructive)
                                     .font(.caption)
                             }
                         }
@@ -295,11 +297,11 @@ struct PineconeSpeakerCard: View {
             }
         }
         .padding()
-        .background(Color.gray.opacity(0.05))
+        .background(Color.lightGrayBackground)
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                .stroke(Color.divider, lineWidth: 1)
         )
         .onTapGesture {
             if !speaker.embeddings.isEmpty {
@@ -349,7 +351,7 @@ struct PineconeAddSpeakerView: View {
                                 .foregroundColor(.primary)
                         } else {
                             Text("Choose Audio File")
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color.accent)
                         }
                         Spacer()
                     }
@@ -359,7 +361,7 @@ struct PineconeAddSpeakerView: View {
             if !errorMessage.isEmpty {
                 Section {
                     Text(errorMessage)
-                        .foregroundColor(.red)
+                        .foregroundColor(Color.destructive)
                 }
             }
         }
@@ -479,7 +481,7 @@ struct PineconeAddEmbeddingView: View {
             Section {
                 HStack {
                     Image(systemName: "person.circle.fill")
-                        .foregroundColor(.blue)
+                        .foregroundColor(Color.accent)
                         .font(.title)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Adding voice sample for:")
@@ -507,7 +509,7 @@ struct PineconeAddEmbeddingView: View {
                                 .foregroundColor(.primary)
                         } else {
                             Text("Choose Audio File")
-                                .foregroundColor(.blue)
+                                .foregroundColor(Color.accent)
                         }
                         Spacer()
                     }
@@ -517,7 +519,7 @@ struct PineconeAddEmbeddingView: View {
             if !errorMessage.isEmpty {
                 Section {
                     Text(errorMessage)
-                        .foregroundColor(.red)
+                        .foregroundColor(Color.destructive)
                 }
             }
         }

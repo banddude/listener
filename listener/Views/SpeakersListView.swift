@@ -113,7 +113,7 @@ struct SpeakerCard: View {
                         
                         // Pinecone connection status icon
                         Image(systemName: isLinkedToPinecone ? "checkmark.circle.fill" : "circle")
-                            .foregroundColor(isLinkedToPinecone ? .green : .gray)
+                            .foregroundColor(isLinkedToPinecone ? .success : .secondaryText)
                             .font(.caption)
                     }
                     
@@ -121,7 +121,7 @@ struct SpeakerCard: View {
                     if let pineconeSpeekerName = speaker.pinecone_speaker_name {
                         Text("linked to: \(pineconeSpeekerName)")
                             .font(.caption2)
-                            .foregroundColor(.green)
+                            .foregroundColor(.success)
                     }
                     
                     HStack(spacing: 12) {
@@ -144,22 +144,24 @@ struct SpeakerCard: View {
                 // Action buttons
                 VStack(spacing: 8) {
                     HStack(spacing: 12) {
-                        Button(action: {
+                        AppIconButton(
+                            iconName: "pencil",
+                            size: 32,
+                            backgroundColor: .accent,
+                            foregroundColor: .white
+                        ) {
                             editedName = speaker.name
                             showingEditName = true
-                        }) {
-                            Image(systemName: "pencil")
-                                .foregroundColor(.blue)
                         }
-                        .buttonStyle(.plain)
                         
-                        Button(action: {
+                        AppIconButton(
+                            iconName: "info.circle",
+                            size: 32,
+                            backgroundColor: .success,
+                            foregroundColor: .white
+                        ) {
                             showingDetails = true
-                        }) {
-                            Image(systemName: "info.circle")
-                                .foregroundColor(.green)
                         }
-                        .buttonStyle(.plain)
                     }
                     
                     // Pinecone link/unlink button
@@ -173,7 +175,7 @@ struct SpeakerCard: View {
                             } else {
                                 Text("Unlink")
                                     .font(.caption)
-                                    .foregroundColor(.red)
+                                    .foregroundColor(.destructive)
                             }
                         }
                         .buttonStyle(.plain)
@@ -188,7 +190,7 @@ struct SpeakerCard: View {
                             } else {
                                 Text("Link to Pinecone")
                                     .font(.caption)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.accent)
                             }
                         }
                         .buttonStyle(.plain)
@@ -198,7 +200,7 @@ struct SpeakerCard: View {
             }
         }
         .padding()
-        .background(Color.gray.opacity(0.1))
+        .background(Color.lightGrayBackground)
         .cornerRadius(12)
         .sheet(isPresented: $showingDetails) {
             SpeakerDetailView(
@@ -334,50 +336,48 @@ struct SpeakerDetailView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     // Speaker Info
-                    VStack(spacing: 16) {
-                        AppSpeakerAvatar(speakerName: speaker.name, size: 80)
-                        
-                        Text(speaker.name)
-                            .font(.title)
-                            .fontWeight(.bold)
+                    AppInfoCard {
+                        VStack(spacing: 16) {
+                            AppSpeakerAvatar(speakerName: speaker.name, size: 80)
+                            
+                            Text(speaker.name)
+                                .font(.title)
+                                .fontWeight(.bold)
+                        }
+                        .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(12)
                     
                     // Stats
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Statistics")
-                            .font(.headline)
-                        
-                        HStack(spacing: 20) {
-                            StatItem(
-                                icon: "text.bubble",
-                                title: "Utterances",
-                                value: "\(speaker.utterance_count ?? 0)"
-                            )
+                    AppInfoCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Statistics")
+                                .font(.headline)
                             
-                            StatItem(
-                                icon: "clock",
-                                title: "Total Duration",
-                                value: DurationUtilities.formatDurationCompact(TimeInterval(speaker.total_duration ?? 0))
-                            )
-                            
-                            if let utteranceCount = speaker.utterance_count,
-                               let totalDuration = speaker.total_duration,
-                               utteranceCount > 0 {
+                            HStack(spacing: 20) {
                                 StatItem(
-                                    icon: "speedometer",
-                                    title: "Avg Duration",
-                                    value: DurationUtilities.formatDurationCompact(TimeInterval(totalDuration / utteranceCount))
+                                    icon: "text.bubble",
+                                    title: "Utterances",
+                                    value: "\(speaker.utterance_count ?? 0)"
                                 )
+                                
+                                StatItem(
+                                    icon: "clock",
+                                    title: "Total Duration",
+                                    value: DurationUtilities.formatDurationCompact(TimeInterval(speaker.total_duration ?? 0))
+                                )
+                                
+                                if let utteranceCount = speaker.utterance_count,
+                                   let totalDuration = speaker.total_duration,
+                                   utteranceCount > 0 {
+                                    StatItem(
+                                        icon: "speedometer",
+                                        title: "Avg Duration",
+                                        value: DurationUtilities.formatDurationCompact(TimeInterval(totalDuration / utteranceCount))
+                                    )
+                                }
                             }
                         }
                     }
-                    .padding()
-                    .background(Color.gray.opacity(0.1))
-                    .cornerRadius(12)
                     
                     Spacer()
                 }
@@ -473,14 +473,14 @@ struct PineconeSpeakerPickerView: View {
                                         
                                         if selectedSpeeker == speakerName {
                                             Image(systemName: "checkmark.circle.fill")
-                                                .foregroundColor(.green)
+                                                .foregroundColor(.success)
                                         }
                                     }
                                     .padding(.horizontal, 12)
                                     .padding(.vertical, 8)
                                     .background(
                                         selectedSpeeker == speakerName ? 
-                                        Color.green.opacity(0.1) : Color.clear
+                                        Color.success.opacity(0.1) : Color.clear
                                     )
                                     .cornerRadius(8)
                                     .contentShape(Rectangle())
@@ -514,8 +514,8 @@ struct PineconeSpeakerPickerView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Color.gray.opacity(0.2))
-                    .foregroundColor(.primary)
+                    .background(Color.mediumGrayBackground)
+                    .foregroundColor(.primaryText)
                     .cornerRadius(8)
                     
                     Button("Link Speaker") {
@@ -525,7 +525,7 @@ struct PineconeSpeakerPickerView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(canLink ? Color.green : Color.gray.opacity(0.3))
+                    .background(canLink ? Color.success : Color.mediumGrayBackground)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                     .disabled(!canLink)

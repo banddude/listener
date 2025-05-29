@@ -42,11 +42,23 @@ extension Color {
     static let tabUnselected = Color.gray
     static let tabSelectedBackground = accentLight
     
+    // MARK: - Card & Container Colors
+    static let cardBorder = Color.gray.opacity(0.2)
+    static let cardElevated = Color(.tertiarySystemBackground)
+    static let lightGrayBackground = Color.gray.opacity(0.05)
+    static let mediumGrayBackground = Color.gray.opacity(0.08)
+    static let divider = Color.gray.opacity(0.3)
+    
     // MARK: - Button Colors
     static let buttonPrimaryBackground = accent
     static let buttonPrimaryText = Color.white
     static let buttonSecondaryBackground = accentMedium
     static let buttonSecondaryText = accent
+    
+    // MARK: - Material Alternatives
+    static let materialLight = Color(.systemBackground)
+    static let materialMedium = Color(.secondarySystemBackground)
+    static let materialHeavy = Color(.tertiarySystemBackground)
 }
 
 // Helper for hex colors if needed, though asset catalog is preferred.

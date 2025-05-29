@@ -16,12 +16,14 @@ struct AddSpeakerView: View {
                 Text("Add New Speaker")
                     .appTitle()
                 
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Speaker Name")
-                        .appHeadline()
-                    
-                    TextField("Enter speaker name", text: $speakerName)
-                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                AppFormCard {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Speaker Name")
+                            .appHeadline()
+                        
+                        TextField("Enter speaker name", text: $speakerName)
+                            .textFieldStyle(RoundedBorderTextFieldStyle())
+                    }
                 }
                 
                 if !errorMessage.isEmpty {
