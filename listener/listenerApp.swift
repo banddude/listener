@@ -16,7 +16,7 @@ struct listenerApp: App {
             #if os(macOS)
             MacContentView()
                 .environmentObject(navigationManager)
-                .frame(minWidth: 1000, minHeight: 700)
+                .frame(minWidth: 1_000, minHeight: 700)
             #else
             DashboardView()
                 .environmentObject(navigationManager)
@@ -544,11 +544,10 @@ struct MacConversationsView: View {
             } else {
                 ConversationsListView(
                     conversations: conversations, 
-                    speakerIDService: speakerIDService,
-                    onRefreshRequested: {
+                    speakerIDService: speakerIDService
+                )                    {
                         loadConversations()
                     }
-                )
             }
             
             if !errorMessage.isEmpty {

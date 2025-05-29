@@ -1,186 +1,141 @@
-# Listener Pro - AI-Powered Meeting Companion
+# Listener Pro - iOS Audio Recording & Speaker ID App
 
 ## Overview
 
-**Listener Pro** transforms your iPhone into an intelligent meeting companion that not only records and transcribes conversations but identifies who said what, when they said it, and creates actionable insights. By seamlessly integrating with our Speaker ID backend system, your iOS device becomes a powerful tool for meeting management, interview documentation, and conversation analysis.
+**Listener Pro** is a cross-platform iOS/macOS SwiftUI app that transforms your device into an intelligent meeting companion. It records audio with voice activity detection, uploads conversations to a Speaker ID backend for processing, and provides conversation management with speaker identification.
 
-## What Makes Listener Pro Revolutionary
+## What Listener Pro Does
 
-### 🎯 **Voice Activity Detection + Speaker Identification**
-- **Smart Recording**: Automatically starts/stops recording based on voice activity
-- **Speaker Recognition**: Identifies individual speakers using voice fingerprinting
-- **Real-time Processing**: Live transcription with speaker attribution
-- **Continuous Learning**: Improves speaker recognition over time
+### 🎯 **Smart Audio Recording**
+- **Voice Activity Detection**: Automatically starts/stops recording based on speech detection
+- **Configurable Thresholds**: Set silence detection from 1-60 seconds
+- **Real-time Feedback**: Visual indicators for listening, speech detection, and recording status
+- **Automatic Segmentation**: Creates individual audio clips when voice activity is detected
 
-### 📱 **Enhanced iOS Experience**
-- **Offline Capability**: Record even without internet, sync when connected
-- **Background Processing**: Continues listening even when app is minimized
-- **Smart Notifications**: Alerts when meetings start/end or action items are detected
-- **Widget Support**: Quick recording controls from your home screen
+### 📱 **Cross-Platform Experience**
+- **iOS**: Tab-based navigation optimized for mobile touch interface
+- **macOS**: Sidebar navigation with larger screen layouts and keyboard shortcuts
+- **Shared Logic**: Core recording and API integration identical across platforms
 
-### 🧠 **Intelligent Meeting Analytics**
-- **Speaker Stats**: See who talks most, participation patterns, speaking time
-- **Topic Extraction**: Automatically identifies key discussion points
-- **Action Items**: AI detects and highlights commitments and next steps
-- **Meeting Quality**: Analyzes interruptions, speaking balance, energy levels
-
-### 🔄 **Seamless Backend Integration**
-- **Cloud Sync**: All recordings and transcriptions sync to your Speaker ID dashboard
-- **Cross-Platform Access**: View detailed analytics on web dashboard
-- **Team Collaboration**: Share meeting insights with participants
-- **Enterprise Features**: Bulk management, speaker merging, advanced analytics
+### 🔄 **Backend Integration**
+- **Speaker ID Server**: Uploads audio to `https://speaker-id-server-production.up.railway.app`
+- **Speaker Recognition**: Processes audio for individual speaker identification
+- **Conversation Management**: View, edit, and organize processed conversations
+- **Speaker Profiles**: Link speakers to Pinecone voice embeddings for improved recognition
 
 ## Core Features
 
-### 📲 **iOS App Features**
-1. **Voice Activity Recording**
-   - Configurable silence thresholds (1-60 seconds)
-   - Automatic clip segmentation
-   - High-quality audio capture with noise reduction
+### 📲 **Recording & Processing**
+- Voice activity detection with real-time visual feedback
+- Audio buffering for seamless recording experience
+- Upload conversations to backend for speaker ID processing
+- Conversation playback with individual utterance controls
 
-2. **Real-Time Speaker ID**
-   - Live speaker identification during recording
-   - Visual indicators showing who's currently speaking
-   - Confidence scores for speaker assignments
+### 💬 **Conversation Management**
+- View all processed conversations with speaker attribution
+- Individual utterance playback and editing
+- Speaker assignment editing with bulk update options
+- Conversation renaming and organization
 
-3. **Instant Transcription**
-   - AssemblyAI-powered transcription with speaker labels
-   - Real-time text display during meetings
-   - Offline queue for later processing
+### 👥 **Speaker Management**
+- View all identified speakers with statistics
+- Add new speakers manually
+- Link speakers to Pinecone voice profiles for better recognition
+- Edit speaker assignments across conversations
 
-4. **Smart Summaries**
-   - AI-generated meeting summaries
-   - Extracted action items and key decisions
-   - Participant analysis and speaking patterns
-
-5. **Meeting Management**
-   - Name and categorize conversations
-   - Search transcripts by speaker or keyword
-   - Export options (PDF, text, audio clips)
-
-### 🖥️ **Web Dashboard Integration**
-1. **Detailed Analytics**
-   - Speaker participation charts
-   - Speaking time distribution
-   - Interruption analysis
-   - Topic progression maps
-
-2. **Speaker Management**
-   - Train voice models with multiple samples
-   - Merge similar speakers
-   - Edit speaker assignments
-   - Voice sample quality indicators
-
-3. **Conversation Archive**
-   - Searchable transcript database
-   - Audio snippet playback
-   - Bulk editing capabilities
-   - Team sharing and permissions
+### 🎨 **Design System**
+- Unified design system with consistent components
+- Cross-platform UI components that adapt to iOS/macOS
+- Semantic design tokens for colors, typography, and spacing
 
 ## Technical Architecture
 
-### Mobile Components
-- **SwiftUI Interface**: Modern, responsive iOS design
-- **AVAudioEngine**: High-quality audio recording and processing
-- **CoreML Integration**: On-device voice activity detection
-- **Background Tasks**: Continuous monitoring capabilities
-- **CloudKit Sync**: Seamless data synchronization
+### App Structure
+```
+listener/
+├── Views/                    (All SwiftUI views)
+├── DesignSystem/             (Unified UI components)
+├── VoiceActivityRecorder.swift    (Core audio capture)
+├── SpeakerIDService.swift         (Backend API client) 
+├── DataModels.swift               (API models)
+├── AppNavigationManager.swift     (Cross-platform navigation)
+├── CircularAudioBuffer.swift      (Audio buffering)
+└── listenerApp.swift              (App entry point)
+```
+
+### Core Components
+- **Audio Pipeline**: AVAudioEngine-based recording with voice activity detection
+- **Backend Integration**: RESTful API client for Speaker ID Server
+- **Navigation**: Cross-platform navigation manager supporting iOS tabs and macOS sidebar
+- **Design System**: Reusable SwiftUI components for consistent UI
 
 ### Backend Integration
-- **FastAPI Endpoints**: RESTful API for all operations
-- **Pinecone Vector DB**: Voice embedding storage and matching
-- **PostgreSQL**: Conversation and speaker metadata
-- **AWS S3**: Audio file storage with presigned URLs
-- **AssemblyAI**: Professional-grade transcription service
+**Base URL**: `https://speaker-id-server-production.up.railway.app`
 
-### Real-Time Pipeline
-1. **Audio Capture** → iOS app records with voice activity detection
-2. **Speaker Analysis** → Extract voice embeddings, match against known speakers
-3. **Transcription** → Convert speech to text with speaker labels
-4. **Intelligence Layer** → Generate summaries, extract insights
-5. **Sync & Store** → Upload to backend, update dashboard
-6. **Analytics** → Process speaking patterns, generate reports
+Key API endpoints used:
+- `POST /api/conversations/upload` - Upload audio files for processing
+- `GET /api/conversations` - List all conversations  
+- `GET /api/conversations/{id}` - Get detailed conversation with utterances
+- `GET /api/speakers` - Manage speaker profiles
+- `PUT /api/utterances/{id}` - Edit utterance text or speaker assignment
 
-## Use Cases
+## Development
 
-### 📊 **Business Meetings**
-- Track participation levels across team members
-- Identify who made specific commitments
-- Generate automatic meeting minutes with speaker attribution
-- Analyze meeting effectiveness and engagement
+### Requirements
+- **Xcode 16.2+** with iOS 18.2+ SDK
+- **iOS 18.2+** / **macOS 15.0+** deployment targets
+- **Microphone permissions** required for audio recording
 
-### 🎙️ **Interviews & Journalism**
-- Accurate speaker identification for multi-person interviews
-- Quick quote attribution and fact-checking
-- Audio snippet extraction for story verification
-- Searchable interview archives
+### Build Commands
+```bash
+# Open in Xcode
+open listener.xcodeproj
 
-### 💼 **Sales & Client Calls**
-- Track client concerns and objections by speaker
-- Identify decision-makers and influencers
-- Generate follow-up action items with ownership
-- Analyze conversation dynamics and sentiment
+# Build from command line
+xcodebuild -project listener.xcodeproj -scheme listener -destination 'platform=iOS Simulator,name=iPhone 16' build
 
-### 🏛️ **Legal & Compliance**
-- Precise speaker identification for depositions
-- Timestamped transcript generation
-- Audio evidence with speaker verification
-- Chain of custody for recording integrity
+# Clean build if needed
+rm -rf ~/Library/Developer/Xcode/DerivedData/listener-*
+```
 
-### 🎓 **Education & Training**
-- Student participation tracking
-- Q&A session analysis
-- Speaking skill development feedback
-- Group discussion facilitation
+### No External Dependencies
+- Pure Xcode project with no package managers
+- No CocoaPods, SPM, or npm dependencies
+- Self-contained SwiftUI application
 
-## Privacy & Security
+## Platform Differences
 
-- **Local Processing**: Voice activity detection happens on-device
-- **Encrypted Storage**: All audio and transcripts encrypted at rest
-- **Selective Sync**: Choose what conversations to upload
-- **Speaker Consent**: Clear indicators when recording is active
-- **Data Retention**: Configurable auto-deletion policies
+### iOS Features
+- Tab-based navigation (Recorder, Conversations, Speakers, Dashboard)
+- Mobile-optimized touch controls and layouts
+- Portrait orientation support
 
-## Pricing Tiers
+### macOS Features  
+- Sidebar navigation with detail views
+- Larger screen layouts with more information density
+- Keyboard shortcuts and desktop interaction patterns
+- Resizable windows with minimum size constraints
 
-### 📱 **Listener Basic** (Free)
-- Up to 3 hours of recording per month
-- Basic transcription and summarization
-- 2 speaker profiles
-- iOS app only
+### Shared Features
+- Identical audio recording and voice activity detection
+- Same backend API integration and data models
+- Consistent design system and UI components
+- Cross-platform conversation and speaker management
 
-### 💼 **Listener Pro** ($19/month)
-- Unlimited recording and transcription
-- Advanced speaker identification (unlimited speakers)
-- Web dashboard access
-- Real-time collaboration features
-- Priority transcription processing
+## Current Status
 
-### 🏢 **Listener Enterprise** (Custom)
-- On-premises deployment options
-- Advanced analytics and reporting
-- API access for integrations
-- Custom speaker training
-- Dedicated support
+This is a **production iOS/macOS app** that:
+- ✅ Successfully records audio with voice activity detection
+- ✅ Uploads conversations to Speaker ID backend for processing  
+- ✅ Displays processed conversations with speaker identification
+- ✅ Provides full conversation and speaker management UI
+- ✅ Works on both iOS and macOS with platform-appropriate UX
 
-## Getting Started
+## Related Documentation
 
-1. **Download** Listener Pro from the App Store
-2. **Grant Permissions** for microphone and background processing
-3. **Train Your Voice** by adding speaker samples
-4. **Start Recording** your first meeting
-5. **Review Results** on your iPhone or web dashboard
-6. **Share Insights** with your team
-
-## Future Roadmap
-
-- **Apple Watch Integration**: Start/stop recording from your wrist
-- **Siri Shortcuts**: Voice commands for meeting management
-- **Calendar Integration**: Automatic recording for scheduled meetings
-- **Live Streaming**: Real-time transcription for virtual meetings
-- **Multi-Language Support**: Global speaker identification
-- **Sentiment Analysis**: Emotional tone tracking throughout conversations
+- **API Integration**: See `README_API.md` for complete backend API documentation
+- **Development Guide**: See `CLAUDE.md` for codebase architecture and development workflow
 
 ---
 
-**Transform the way you capture, understand, and act on conversations. Listener Pro - Because every word matters, and every voice should be heard.** 
+**Listener Pro transforms conversations into actionable insights with intelligent speaker identification.**

@@ -17,7 +17,7 @@ struct PrimaryActionButtonStyle: ButtonStyle {
         configuration.label
             .font(.headline)
             .foregroundColor(Color.buttonPrimaryText)
-            .padding(AppSpacing.medium)
+            .padding(16)
             .frame(maxWidth: .infinity)
             .background(Color.buttonPrimaryBackground)
             .cornerRadius(12)
@@ -31,7 +31,7 @@ struct SecondaryActionButtonStyle: ButtonStyle {
         configuration.label
             .font(.subheadline)
             .foregroundColor(Color.buttonSecondaryText)
-            .padding(AppSpacing.medium)
+            .padding(16)
             .frame(maxWidth: .infinity)
             .background(Color.buttonSecondaryBackground)
             .cornerRadius(12)
@@ -50,9 +50,9 @@ struct AppTabButton: View {
     let action: () -> Void
     
     private var fontSize: Font {
-        if width < AppSpacing.tabButtonMinWidth || title.count > 8 {
+        if width < 70 || title.count > 8 {
             return .tabButtonSmall
-        } else if width < AppSpacing.tabButtonMediumWidth {
+        } else if width < 80 {
             return .tabButtonMedium
         } else {
             return .tabButtonLarge
@@ -60,12 +60,12 @@ struct AppTabButton: View {
     }
     
     private var iconSize: CGFloat {
-        width < AppSpacing.tabButtonMinWidth ? 12 : 14
+        width < 70 ? 12 : 14
     }
     
     var body: some View {
         Button(action: action) {
-            VStack(spacing: AppSpacing.tiny) {
+            VStack(spacing: 3) {
                 Image(systemName: iconName)
                     .font(.system(size: iconSize))
                 Text(title)
@@ -74,7 +74,7 @@ struct AppTabButton: View {
                     .minimumScaleFactor(0.6)
             }
             .foregroundColor(isSelected ? .tabSelected : .tabUnselected)
-            .frame(width: width, height: AppSpacing.tabButtonHeight)
+            .frame(width: width, height: 50)
             .background(
                 isSelected ? Color.tabSelectedBackground : Color.clear
             )
@@ -95,10 +95,80 @@ struct StandardCard<Content: View>: View {
 
     var body: some View {
         content
-            .padding(AppSpacing.medium)
+            .padding(16)
             .background(Color.cardBackground)
             .cornerRadius(12)
             .standardShadow()
+    }
+}
+
+// MARK: - Layout Templates
+
+struct AppScrollContainer<Content: View>: View {
+    let content: Content
+    let spacing: CGFloat
+    
+    init(spacing: CGFloat = 16, @ViewBuilder content: () -> Content) {
+        self.spacing = spacing
+        self.content = content()
+    }
+    
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: spacing) {
+                content
+            }
+            .padding(16)
+        }
+        .background(Color(.systemGroupedBackground))
+    }
+}
+
+struct AppSectionHeader: View {
+    let title: String
+    let actionIcon: String?
+    let actionColor: Color
+    let action: (() -> Void)?
+    
+    init(title: String, actionIcon: String? = nil, actionColor: Color = .accent, action: (() -> Void)? = nil) {
+        self.title = title
+        self.actionIcon = actionIcon
+        self.actionColor = actionColor
+        self.action = action
+    }
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .appHeadline()
+            
+            Spacer()
+            
+            if let actionIcon = actionIcon, let action = action {
+                Button(action: action) {
+                    Image(systemName: actionIcon)
+                        .foregroundColor(actionColor)
+                        .font(.title2)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+struct AppMainVStack<Content: View>: View {
+    let spacing: CGFloat
+    let content: Content
+    
+    init(spacing: CGFloat = 20, @ViewBuilder content: () -> Content) {
+        self.spacing = spacing
+        self.content = content()
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: spacing) {
+            content
+        }
     }
 }
 
@@ -110,7 +180,7 @@ struct AppEmptyState: View {
     let subtitle: String
     
     var body: some View {
-        VStack(spacing: AppSpacing.medium) {
+        VStack(spacing: 16) {
             Image(systemName: icon)
                 .font(.system(size: 48))
                 .foregroundColor(.secondaryText)
@@ -123,7 +193,7 @@ struct AppEmptyState: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, AppSpacing.xl)
+        .padding(.vertical, 40)
     }
 }
 
@@ -140,7 +210,7 @@ struct AppLoadingState: View {
                 .appCaption()
         }
         .frame(maxWidth: .infinity)
-        .padding(AppSpacing.medium)
+        .padding(16)
     }
 }
 
@@ -153,12 +223,12 @@ struct AppStatusIndicator: View {
     let detailText: String?
     
     var body: some View {
-        HStack(spacing: AppSpacing.small) {
+        HStack(spacing: 8) {
             Circle()
                 .fill(isActive ? Color.recordingActive : Color.recordingInactive)
                 .frame(width: 12, height: 12)
             
-            VStack(alignment: .leading, spacing: AppSpacing.minimal) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(isActive ? activeText : inactiveText)
                     .font(.statusText)
                     .fontWeight(.semibold)
@@ -181,10 +251,35 @@ struct AppErrorMessage: View {
     var body: some View {
         Text(message)
             .foregroundColor(.destructive)
-            .padding(AppSpacing.medium)
+            .padding(16)
             .background(Color.destructiveLight)
             .cornerRadius(12)
-            .padding(AppSpacing.medium)
+            .padding(16)
+    }
+}
+
+// MARK: - Statistics Component
+
+struct StatItem: View {
+    let icon: String
+    let title: String
+    let value: String
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(.blue)
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            Text(value)
+                .font(.headline)
+                .fontWeight(.semibold)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -196,7 +291,7 @@ struct ComponentsPreview: View {
     
     var body: some View {
         ScrollView {
-            VStack(spacing: AppSpacing.sectionSpacing) {
+            VStack(spacing: 20) {
                 // Buttons
                 Button("Primary Action") { }
                     .buttonStyle(PrimaryActionButtonStyle())
@@ -209,9 +304,8 @@ struct ComponentsPreview: View {
                     title: "Recorder",
                     iconName: AppIcons.tabRecorder,
                     isSelected: isSelected,
-                    width: 80,
-                    action: { isSelected.toggle() }
-                )
+                    width: 80
+                )                    { isSelected.toggle() }
 
                 // Card
                 StandardCard {
@@ -240,7 +334,7 @@ struct ComponentsPreview: View {
                 // Error Message
                 AppErrorMessage(message: "Something went wrong")
             }
-            .padding(AppSpacing.medium)
+            .padding(16)
         }
         .background(Color.primaryBackground)
     }

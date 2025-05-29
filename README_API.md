@@ -2,7 +2,16 @@
 
 ## Introduction
 
-The Speaker ID Server is a robust application designed for speaker identification and diarization in audio conversations. This document provides comprehensive guidance on how to integrate with the Speaker ID Server's backend API in your own applications. The API allows you to upload audio conversations, manage speakers, retrieve conversation details, and work with speaker embeddings for voice recognition.
+This document provides comprehensive API documentation for the **Speaker ID Server backend** that powers the Listener Pro iOS/macOS app. The Speaker ID Server is a robust FastAPI application designed for speaker identification and diarization in audio conversations.
+
+**Note**: This documentation is for developers who want to:
+- Understand the backend API that Listener Pro uses
+- Build their own clients that integrate with the same backend
+- Extend or modify the backend integration
+
+**For iOS app development**, see `README.md` and `CLAUDE.md` instead.
+
+The API allows you to upload audio conversations, manage speakers, retrieve conversation details, and work with speaker embeddings for voice recognition.
 
 The system is built on FastAPI and provides endpoints for three main functional areas:
 

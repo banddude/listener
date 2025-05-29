@@ -35,7 +35,7 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
     private var audioPlayer: AVAudioPlayer?
     
     // MARK: - Configuration
-    private let sampleRate: Double = 44100
+    private let sampleRate: Double = 44_100
     private let channels: AVAudioChannelCount = 1
     private let bufferDuration: TimeInterval = 30.0  // 30 seconds for pre-speech
     private let preRecordingDuration: TimeInterval = 2.0
@@ -94,7 +94,6 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
                 name: AVAudioSession.interruptionNotification,
                 object: audioSession
             )
-            
         } catch {
             DispatchQueue.main.async {
                 self.errorMessage = "Failed to setup audio session: \(error.localizedDescription)"
@@ -187,7 +186,6 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
                 self.isListening = true
                 self.statusMessage = "Listening for speech..."
             }
-            
         } catch {
             DispatchQueue.main.async {
                 self.errorMessage = "Failed to start listening: \(error.localizedDescription)"
@@ -235,7 +233,7 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
         let inputNode = audioEngine.inputNode
         let recordingFormat = inputNode.outputFormat(forBus: 0)
         
-        inputNode.installTap(onBus: 0, bufferSize: 1024, format: recordingFormat) { [weak self] buffer, time in
+        inputNode.installTap(onBus: 0, bufferSize: 1_024, format: recordingFormat) { [weak self] buffer, time in
             self?.processAudioBuffer(buffer, time: time)
         }
         
@@ -270,7 +268,7 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
         var pcmData = Data()
         for sample in samples {
             let clampedSample = max(-1.0, min(1.0, sample))
-            let intSample = Int16(clampedSample * 32767.0)
+            let intSample = Int16(clampedSample * 32_767.0)
             let littleEndianSample = intSample.littleEndian
             withUnsafeBytes(of: littleEndianSample) { bytes in
                 pcmData.append(contentsOf: bytes)
@@ -451,7 +449,6 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
             let preAudioData = audioBuffer.extractAudio(from: preRecordingStart, duration: preRecordingDuration)
             
             if let tempFileURL = activeRecordingFileURL {
-                
                 print("🔍 Pre-audio size: \(preAudioData?.count ?? 0) bytes")
                 
                 // Check if temp file exists and get its size
@@ -460,7 +457,7 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
                         let mainAudioData = try Data(contentsOf: tempFileURL)
                         print("🔍 Main audio size: \(mainAudioData.count) bytes")
                         
-                        if mainAudioData.count > 0 {
+                        if !mainAudioData.isEmpty {
                             // Combine pre-recording + main recording + post silence
                             if let preAudio = preAudioData {
                                 let combinedAudio = combineAudioData(preAudio: preAudio, mainAudio: mainAudioData)
@@ -547,7 +544,7 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
     }
     
     private func createWAVFile(from pcmData: Data) -> Data {
-        let sampleRate: UInt32 = 44100
+        let sampleRate: UInt32 = 44_100
         let channels: UInt16 = 1
         let bitsPerSample: UInt16 = 16
         let frameSize = channels * bitsPerSample / 8
@@ -641,7 +638,7 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
         do {
             let files = try FileManager.default.contentsOfDirectory(at: recordingsURL, includingPropertiesForKeys: [.creationDateKey], options: [])
             let audioFiles = files.filter { $0.pathExtension.lowercased() == "wav" }
-                .sorted { (url1, url2) in
+                .sorted { url1, url2 in
                     let date1 = (try? url1.resourceValues(forKeys: [.creationDateKey]))?.creationDate ?? Date.distantPast
                     let date2 = (try? url2.resourceValues(forKeys: [.creationDateKey]))?.creationDate ?? Date.distantPast
                     return date1 > date2

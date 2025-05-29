@@ -51,7 +51,7 @@ class CircularAudioBuffer {
         
         for i in 0..<frameCount {
             let sample = channelData[i]
-            let pcmSample = Int16(max(-32768, min(32767, sample * 32767)))
+            let pcmSample = Int16(max(-32_768, min(32_767, sample * 32_767)))
             
             withUnsafeBytes(of: pcmSample.littleEndian) { bytes in
                 pcmData.append(contentsOf: bytes)
@@ -92,8 +92,8 @@ class CircularAudioBuffer {
     }
     
     func extractAudio(from startTime: Date, duration: TimeInterval) -> Data? {
-        return queue.sync { [weak self] in
-            return self?.extractAudioSync(from: startTime, duration: duration)
+        queue.sync { [weak self] in
+            self?.extractAudioSync(from: startTime, duration: duration)
         }
     }
     
@@ -153,12 +153,12 @@ class CircularAudioBuffer {
         var wavData = Data()
         
         let audioFormat: UInt16 = 1 // PCM
-        let numChannels: UInt16 = UInt16(channels)
-        let sampleRate32: UInt32 = UInt32(sampleRate)
+        let numChannels = UInt16(channels)
+        let sampleRate32 = UInt32(sampleRate)
         let bitsPerSample: UInt16 = 16
         let blockAlign: UInt16 = numChannels * (bitsPerSample / 8)
         let byteRate: UInt32 = sampleRate32 * UInt32(blockAlign)
-        let dataSize: UInt32 = UInt32(pcmData.count)
+        let dataSize = UInt32(pcmData.count)
         let fileSize: UInt32 = 36 + dataSize
         
         // RIFF header
