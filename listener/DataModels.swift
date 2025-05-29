@@ -56,6 +56,8 @@ struct SpeakerIDUtterance: Codable {
     let end_ms: Int
     let text: String
     let audio_url: String
+    let included_in_pinecone: Bool
+    let utterance_embedding_id: String?
 }
 
 struct ConversationDetail: Codable {
@@ -72,18 +74,33 @@ struct Speaker: Codable, Identifiable {
     let name: String
     let utterance_count: Int?
     let total_duration: Int?
+    let pinecone_speaker_name: String?
     
     // For API responses that might not include counts
-    init(id: String, name: String, utterance_count: Int? = nil, total_duration: Int? = nil) {
+    init(id: String, name: String, utterance_count: Int? = nil, total_duration: Int? = nil, pinecone_speaker_name: String? = nil) {
         self.id = id
         self.name = name
         self.utterance_count = utterance_count
         self.total_duration = total_duration
+        self.pinecone_speaker_name = pinecone_speaker_name
     }
 }
 
 struct HealthResponse: Codable {
     let status: String
+    let message: String
+}
+
+struct BulkUpdateResponse: Codable {
+    let count: Int
+    let message: String?
+}
+
+struct UtterancePineconeResponse: Codable {
+    let success: Bool
+    let utterance_id: String
+    let included_in_pinecone: Bool
+    let embedding_id: String?
     let message: String
 }
 
@@ -96,4 +113,23 @@ struct BackendConversationSummary: Codable, Identifiable {
     let speaker_count: Int?
     let utterance_count: Int?
     let speakers: [String]?
+}
+
+// MARK: - Pinecone Models (shared between PineconeManagerView and SpeakerIDService)
+struct PineconeEmbedding: Codable, Identifiable {
+    let id: String
+}
+
+struct PineconeSpeaker: Codable, Identifiable {
+    let id = UUID()
+    let name: String
+    let embeddings: [PineconeEmbedding]
+    
+    enum CodingKeys: String, CodingKey {
+        case name, embeddings
+    }
+}
+
+struct PineconeSpeakersResponse: Codable {
+    let speakers: [PineconeSpeaker]
 } 

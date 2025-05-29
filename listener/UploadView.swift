@@ -26,30 +26,22 @@ struct UploadView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 // Header
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Upload Audio File")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    Text("Upload an audio conversation for speaker identification and transcription")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                }
+                Text("Upload")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal)
                 
-                // File Selection
+                // File Selection Card
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Audio File")
-                        .font(.headline)
-                    
                     if let fileURL = selectedFileURL {
-                        HStack {
+                        HStack(spacing: 12) {
                             Image(systemName: "doc.fill")
                                 .foregroundColor(.blue)
+                                .font(.title2)
                             
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(fileURL.lastPathComponent)
-                                    .font(.subheadline)
-                                    .fontWeight(.medium)
+                                    .font(.headline)
                                 
                                 if let fileSize = getFileSize(fileURL) {
                                     Text(fileSize)
@@ -60,100 +52,88 @@ struct UploadView: View {
                             
                             Spacer()
                             
-                            Button("Change") {
+                            Button(action: {
                                 showingFilePicker = true
+                            }) {
+                                Image(systemName: "pencil")
+                                    .foregroundColor(.blue)
                             }
-                            .font(.caption)
-                            .foregroundColor(.blue)
+                            .buttonStyle(.plain)
                         }
                         .padding()
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(8)
+                        .background(Color.gray.opacity(0.1))
+                        .cornerRadius(12)
                     } else {
                         Button(action: {
                             showingFilePicker = true
                         }) {
-                            VStack(spacing: 12) {
+                            HStack(spacing: 12) {
                                 Image(systemName: "icloud.and.arrow.up")
-                                    .font(.system(size: 32))
+                                    .font(.title2)
                                     .foregroundColor(.blue)
                                 
                                 Text("Select Audio File")
                                     .font(.headline)
                                     .foregroundColor(.blue)
                                 
-                                Text("Supported formats: MP3, WAV, M4A, FLAC")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
+                                Spacer()
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(40)
+                            .padding()
                             .background(Color.blue.opacity(0.1))
                             .cornerRadius(12)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.blue, style: StrokeStyle(lineWidth: 2, dash: [5]))
+                                    .stroke(Color.blue, style: StrokeStyle(lineWidth: 1, dash: [5]))
                             )
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .buttonStyle(.plain)
                     }
                 }
+                .padding(.horizontal)
                 
-                // Display Name
+                // Display Name Card
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Display Name (Optional)")
-                        .font(.headline)
-                    
-                    TextField("Enter a name for this conversation", text: $displayName)
+                    TextField("Conversation name (optional)", text: $displayName)
                         .textFieldStyle(RoundedBorderTextFieldStyle())
                 }
+                .padding()
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(12)
+                .padding(.horizontal)
                 
-                // Advanced Settings
+                // Settings Card
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Advanced Settings")
+                    Text("Settings")
                         .font(.headline)
                     
-                    VStack(alignment: .leading, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text("Match Threshold")
-                                    .font(.subheadline)
-                                Spacer()
-                                Text("\(matchThreshold, specifier: "%.2f")")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Slider(value: $matchThreshold, in: 0.1...0.9, step: 0.05)
-                                .accentColor(.blue)
-                            
-                            Text("Lower values are more sensitive to speaker matching")
-                                .font(.caption2)
+                    VStack(spacing: 12) {
+                        HStack {
+                            Text("Match Threshold")
+                                .font(.subheadline)
+                            Spacer()
+                            Text("\(matchThreshold, specifier: "%.2f")")
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                         }
+                        Slider(value: $matchThreshold, in: 0.1...0.9, step: 0.05)
+                            .accentColor(.blue)
                         
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text("Auto-Update Threshold")
-                                    .font(.subheadline)
-                                Spacer()
-                                Text("\(autoUpdateThreshold, specifier: "%.2f")")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            Slider(value: $autoUpdateThreshold, in: 0.1...0.9, step: 0.05)
-                                .accentColor(.blue)
-                            
-                            Text("Threshold for automatically updating speaker embeddings")
-                                .font(.caption2)
+                        HStack {
+                            Text("Auto-Update Threshold")
+                                .font(.subheadline)
+                            Spacer()
+                            Text("\(autoUpdateThreshold, specifier: "%.2f")")
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                         }
+                        Slider(value: $autoUpdateThreshold, in: 0.1...0.9, step: 0.05)
+                            .accentColor(.blue)
                     }
                 }
                 .padding()
                 .background(Color.gray.opacity(0.1))
                 .cornerRadius(12)
+                .padding(.horizontal)
                 
                 // Upload Button
                 Button(action: uploadFile) {
@@ -166,7 +146,7 @@ struct UploadView: View {
                             Image(systemName: "icloud.and.arrow.up")
                         }
                         
-                        Text(isUploading ? "Uploading..." : "Upload & Process")
+                        Text(isUploading ? "Processing..." : "Upload & Process")
                             .fontWeight(.semibold)
                     }
                     .frame(maxWidth: .infinity)
@@ -176,12 +156,13 @@ struct UploadView: View {
                     .cornerRadius(12)
                 }
                 .disabled(selectedFileURL == nil || isUploading)
+                .padding(.horizontal)
                 
                 // Progress
                 if isUploading && uploadProgress > 0 {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
-                            Text("Upload Progress")
+                            Text("Progress")
                                 .font(.subheadline)
                             Spacer()
                             Text("\(Int(uploadProgress * 100))%")
@@ -191,48 +172,57 @@ struct UploadView: View {
                         ProgressView(value: uploadProgress)
                             .progressViewStyle(LinearProgressViewStyle(tint: .blue))
                     }
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
                 }
                 
-                // Upload Message
+                // Status Messages
                 if !uploadMessage.isEmpty {
-                    Text(uploadMessage)
-                        .font(.subheadline)
-                        .foregroundColor(.blue)
-                        .padding()
-                        .background(Color.blue.opacity(0.1))
-                        .cornerRadius(8)
+                    HStack {
+                        Image(systemName: "info.circle")
+                            .foregroundColor(.blue)
+                        Text(uploadMessage)
+                            .font(.subheadline)
+                            .foregroundColor(.blue)
+                    }
+                    .padding()
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
                 }
                 
-                // Error Message
                 if !errorMessage.isEmpty {
-                    Text(errorMessage)
-                        .font(.subheadline)
-                        .foregroundColor(.red)
-                        .padding()
-                        .background(Color.red.opacity(0.1))
-                        .cornerRadius(8)
+                    HStack {
+                        Image(systemName: "exclamationmark.triangle")
+                            .foregroundColor(.red)
+                        Text(errorMessage)
+                            .font(.subheadline)
+                            .foregroundColor(.red)
+                    }
+                    .padding()
+                    .background(Color.red.opacity(0.1))
+                    .cornerRadius(12)
+                    .padding(.horizontal)
                 }
                 
                 // Success Result
                 if let result = uploadResult {
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 12) {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundColor(.green)
-                            Text("Upload Successful!")
+                                .font(.title2)
+                            Text("Upload Complete!")
                                 .font(.headline)
                                 .foregroundColor(.green)
                         }
-                        
-                        Text("Conversation ID: \(result.conversation_id)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
                         
                         Text(result.message)
                             .font(.subheadline)
                         
                         Button("View Conversations") {
-                            // This would navigate back to conversations tab
                             resetForm()
                         }
                         .buttonStyle(.borderedProminent)
@@ -240,9 +230,9 @@ struct UploadView: View {
                     .padding()
                     .background(Color.green.opacity(0.1))
                     .cornerRadius(12)
+                    .padding(.horizontal)
                 }
             }
-            .padding()
         }
         .fileImporter(
             isPresented: $showingFilePicker,

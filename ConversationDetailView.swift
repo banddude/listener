@@ -337,7 +337,8 @@ struct ConversationDetailContent: View {
                 } else {
                     LazyVStack(alignment: .leading, spacing: 8) {
                         ForEach(filteredUtterances, id: \.id) { utterance in
-                            let isCurrentlyPlaying = currentlyPlayingURL == utterance.audio_url
+                            let isCurrentlyPlaying = (isPlayingFullConversation && currentlyPlayingURL == utterance.audio_url) ||
+                                                    (!isPlayingFullConversation && currentlyPlayingURL == utterance.audio_url)
                             
                             UtteranceRow(
                                 utterance: utterance,
@@ -464,25 +465,41 @@ struct ConversationDetailContent: View {
     }
     
     private func playIndividualUtterance(_ utterance: SpeakerIDUtterance) {
+        print("🚨 DEBUG: playIndividualUtterance CALLED! Speaker: \(utterance.speaker_name)")
+        print("🎯 DEBUG: playIndividualUtterance called for: \(utterance.speaker_name)")
+        print("🎯 DEBUG: Current currentlyPlayingURL: \(currentlyPlayingURL ?? "nil")")
+        print("🎯 DEBUG: Utterance audio_url: \(utterance.audio_url)")
+        print("🎯 DEBUG: isPlayingFullConversation: \(isPlayingFullConversation)")
+        
         if currentlyPlayingURL == utterance.audio_url && !isPlayingFullConversation {
             // Already playing this individual utterance, pause it
+            print("🎯 DEBUG: Pausing currently playing individual utterance")
             cleanupAudioPlayer()
             currentlyPlayingURL = nil
             return
         }
         
+        // Stop any current playback (full conversation or individual)
+        print("🎯 DEBUG: Stopping any current playback and starting individual utterance")
         cleanupAudioPlayer()
         isPlayingFullConversation = false
         
         let fullURL = getFullAudioURL(utterance.audio_url)
+        print("🎯 DEBUG: Full audio URL: \(fullURL)")
+        
         guard let audioURL = URL(string: fullURL), audioURL.scheme != nil else {
-            print("❌ Invalid audio URL: \(fullURL)")
+            print("❌ DEBUG: Invalid audio URL for individual playback: \(fullURL)")
             return
         }
         
+        // Set the currently playing URL immediately for UI feedback
+        currentlyPlayingURL = utterance.audio_url
+        print("🎯 DEBUG: Set currentlyPlayingURL to: \(currentlyPlayingURL ?? "nil")")
+        print("🎯 Starting individual utterance playback: \(utterance.speaker_name)")
+        
         let playerItem = AVPlayerItem(url: audioURL)
         audioPlayer = AVPlayer(playerItem: playerItem)
-        currentlyPlayingURL = utterance.audio_url
+        print("🎯 DEBUG: Created AVPlayer and AVPlayerItem")
         
         // Add completion observer
         NotificationCenter.default.addObserver(
@@ -491,11 +508,27 @@ struct ConversationDetailContent: View {
             queue: .main
         ) { _ in
             DispatchQueue.main.async {
+                print("✅ DEBUG: Individual audio playback completed")
+                self.currentlyPlayingURL = nil
+            }
+        }
+        
+        // Add error observer
+        NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemFailedToPlayToEndTime,
+            object: playerItem,
+            queue: .main
+        ) { notification in
+            if let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error {
+                print("❌ DEBUG: Individual audio playback error: \(error)")
+            }
+            DispatchQueue.main.async {
                 self.currentlyPlayingURL = nil
             }
         }
         
         audioPlayer?.play()
+        print("🎵 DEBUG: Called audioPlayer.play() for individual audio playback")
     }
     
     private func cleanupAudioPlayer() {
@@ -512,6 +545,7 @@ struct ConversationDetailContent: View {
         NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: nil)
         
         audioPlayer = nil
+        currentlyPlayingURL = nil  // Reset the playing state for UI updates
     }
     
     private func formatDuration(_ seconds: Int) -> String {
@@ -739,6 +773,32 @@ struct ConversationDetailContent: View {
     }
 }
 
+struct StatItem: View {
+    let icon: String
+    let title: String
+    let value: String
+    
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundColor(.blue)
+            
+            Text(value)
+                .font(.headline)
+                .fontWeight(.semibold)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+            
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
 struct SpeakerFilterButton: View {
     let title: String
     let isSelected: Bool
@@ -781,15 +841,6 @@ struct UtteranceRow: View {
     
     // Access to the SpeakerIDService through environment
     @EnvironmentObject private var speakerIDService: SpeakerIDService
-    
-    // Computed properties for safe access to Pinecone fields with defaults
-    private var includedInPinecone: Bool {
-        return utterance.included_in_pinecone
-    }
-    
-    private var utteranceEmbeddingId: String? {
-        return utterance.utterance_embedding_id
-    }
     
     private var timeFormatter: DateFormatter {
         let formatter = DateFormatter()
@@ -836,30 +887,25 @@ struct UtteranceRow: View {
                         .fontWeight(.semibold)
                         .foregroundColor(.primary)
                     
-                    // Pinecone inclusion status badge - MUCH MORE PROMINENT AND ALWAYS VISIBLE
-                    Button(action: {
-                        togglePineconeInclusion()
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: includedInPinecone ? "checkmark.circle.fill" : "circle")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(includedInPinecone ? .green : .orange)
-                            
-                            Text("Pinecone")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(includedInPinecone ? .green : .orange)
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(includedInPinecone ? Color.green.opacity(0.1) : Color.orange.opacity(0.1))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(includedInPinecone ? Color.green : Color.orange, lineWidth: 1)
-                        )
-                        .cornerRadius(12)
+                    // Pinecone inclusion status badge - MUCH MORE PROMINENT
+                    HStack(spacing: 6) {
+                        Image(systemName: utterance.included_in_pinecone ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(utterance.included_in_pinecone ? .green : .orange)
+                        
+                        Text("Pinecone")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundColor(utterance.included_in_pinecone ? .green : .orange)
                     }
-                    .buttonStyle(.plain)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(utterance.included_in_pinecone ? Color.green.opacity(0.1) : Color.orange.opacity(0.1))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(utterance.included_in_pinecone ? Color.green : Color.orange, lineWidth: 1)
+                    )
+                    .cornerRadius(12)
                     
                     Button(action: {
                         startEditingSpeaker()
@@ -958,6 +1004,7 @@ struct UtteranceRow: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(isPlaying ? Color.blue : Color.clear, lineWidth: 2)
         )
+        .allowsHitTesting(true)
         .sheet(isPresented: $showingSpeakerPicker) {
             SpeakerPickerView(
                 utterance: utterance,
@@ -1125,40 +1172,6 @@ struct UtteranceRow: View {
         applyToAllUtterances = false
         isSavingEdit = false
     }
-    
-    private func togglePineconeInclusion() {
-        let newStatus = !includedInPinecone
-        print("🎯 Toggling Pinecone inclusion for utterance \(utterance.id) from \(includedInPinecone) to \(newStatus)")
-        
-        // Show loading state
-        isSavingEdit = true
-        
-        Task {
-            do {
-                let response = try await speakerIDService.toggleUtterancePineconeInclusion(
-                    utteranceId: utterance.id,
-                    includeInPinecone: newStatus
-                )
-                
-                await MainActor.run {
-                    isSavingEdit = false
-                    print("✅ Pinecone inclusion toggle completed: \(response.message)")
-                    
-                    // Trigger full conversation reload to refresh the inclusion status
-                    onNeedsFullReload()
-                }
-                
-            } catch {
-                print("❌ Error toggling Pinecone inclusion: \(error.localizedDescription)")
-                await MainActor.run {
-                    isSavingEdit = false
-                    
-                    // Still trigger reload to ensure UI consistency
-                    onNeedsFullReload()
-                }
-            }
-        }
-    }
 }
 
 struct SpeakerPickerView: View {
@@ -1309,20 +1322,22 @@ struct SpeakerPickerView: View {
 }
 
 #Preview {
-    ConversationDetailView(
-        conversation: BackendConversationSummary(
-            id: "preview-id",
-            conversation_id: "preview-conversation-id",
-            created_at: "2024-01-01T00:00:00Z",
-            duration: 120,
-            display_name: "Sample Conversation",
-            speaker_count: 2,
-            utterance_count: 5,
-            speakers: ["Speaker 1", "Speaker 2"]
-        ),
-        speakerIDService: SpeakerIDService(),
-        onConversationUpdated: nil
-    )
+    NavigationView {
+        ConversationDetailView(
+            conversation: BackendConversationSummary(
+                id: "1",
+                conversation_id: "conv_1",
+                created_at: "2025-05-26T12:00:00.000Z",
+                duration: 120,
+                display_name: "Team Meeting",
+                speaker_count: 2,
+                utterance_count: 5,
+                speakers: ["Alice", "Bob"]
+            ),
+            speakerIDService: SpeakerIDService(),
+            onConversationUpdated: nil
+        )
+    }
 } 
 
 

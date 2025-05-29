@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+YOU ARE WORKING ON AN IOS APP FOR IPHONE AND IT SHOULD ALSO WORK ON IPAD AND MAC. MAIN GOAL IS IPHONE.
+
+Use the MCP tools to work on the app.
+
+Say everyhting you want me to know. dont count on me to read it. give background spoken updates throughout the process.
+
+do not worry about scope errors in the linter as you are not working in xcode so those errors are inoculous. 
+
+@static is a copy of the repo that we used to origionaly make the app as a web app, so you can use it for references on how to connect to the back end or how we did other things, if you need a guide of some sort.
