@@ -139,7 +139,7 @@ struct ListenerView: View {
             }
         }
         .padding(16)
-        .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.materialHeavy, in: RoundedRectangle(cornerRadius: 16))
     }
     
     private var statsCard: some View {
@@ -167,7 +167,7 @@ struct ListenerView: View {
         }
         .padding(.vertical, 16)
         .padding(.horizontal, 20)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .background(Color.materialMedium, in: RoundedRectangle(cornerRadius: 16))
     }
     
     private var recordingsSection: some View {
@@ -307,7 +307,7 @@ struct RecordingRow: View {
         HStack(alignment: .top, spacing: 12) {
             // Status indicator
             Circle()
-                .fill(isUploaded ? Color.green : (isUploading ? Color.blue : Color.gray.opacity(0.3)))
+                .fill(isUploaded ? Color.success : (isUploading ? Color.accent : Color.lightGrayBackground))
                 .frame(width: 36, height: 36)
                 .overlay(
                     Group {
@@ -317,7 +317,7 @@ struct RecordingRow: View {
                         } else {
                             Image(systemName: isUploaded ? "checkmark" : "waveform")
                                 .font(.subheadline)
-                                .foregroundColor(isUploaded ? .white : .gray)
+                                .foregroundColor(isUploaded ? .white : .secondaryText)
                         }
                     }
                 )
@@ -361,7 +361,7 @@ struct RecordingRow: View {
                             .font(.title2)
                             .foregroundColor(.white)
                             .frame(width: 36, height: 36)
-                            .background(Color.blue)
+                            .background(Color.accent)
                             .cornerRadius(8)
                     }
                     
@@ -372,7 +372,7 @@ struct RecordingRow: View {
                                 .font(.title2)
                                 .foregroundColor(.white)
                                 .frame(width: 36, height: 36)
-                                .background(Color.blue)
+                                .background(Color.accent)
                                 .cornerRadius(8)
                         }
                     } else {
@@ -381,7 +381,7 @@ struct RecordingRow: View {
                                 .font(.title2)
                                 .foregroundColor(.white)
                                 .frame(width: 36, height: 36)
-                                .background(isUploading ? Color.gray : Color.blue)
+                                .background(isUploading ? Color.mediumGrayBackground : Color.accent)
                                 .cornerRadius(8)
                                 .rotationEffect(.degrees(isUploading ? 360 : 0))
                                 .animation(isUploading ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: isUploading)
@@ -395,7 +395,7 @@ struct RecordingRow: View {
                             .font(.title2)
                             .foregroundColor(.white)
                             .frame(width: 36, height: 36)
-                            .background(Color.blue)
+                            .background(Color.accent)
                             .cornerRadius(8)
                     }
                     
@@ -405,17 +405,17 @@ struct RecordingRow: View {
                             .font(.title2)
                             .foregroundColor(.white)
                             .frame(width: 36, height: 36)
-                            .background(Color.red)
+                            .background(Color.destructive)
                             .cornerRadius(8)
                     }
                 }
             }
         }
         .padding()
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .background(Color.materialMedium, in: RoundedRectangle(cornerRadius: 12))
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(isUploaded ? Color.green.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1)
+                .stroke(isUploaded ? Color.success.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1)
         )
     }
 }
@@ -431,7 +431,7 @@ struct ListenerStatItem: View {
         VStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundColor(.blue)
+                .foregroundColor(.accent)
             
             Text(value)
                 .font(.title2)

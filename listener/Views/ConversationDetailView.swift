@@ -155,93 +155,93 @@ struct ConversationDetailContent: View {
                     }
                     .padding(.horizontal)
                     .padding(.vertical, 8)
-                    .background(Color.blue.opacity(0.1))
+                    .background(Color.accentLight)
                     .cornerRadius(8)
                 }
                 
                 // Conversation Title Header with Play Button
-                VStack(alignment: .leading, spacing: 12) {
-                    // Title with edit functionality
-                    HStack {
-                        if isEditingConversationName {
-                            TextField("Conversation name", text: $editedConversationName)
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .textFieldStyle(RoundedBorderTextFieldStyle())
-                                .onSubmit {
-                                    saveConversationName()
-                                }
-                        } else {
-                            Text(currentSummary.display_name ?? "Untitled Conversation")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                                .lineLimit(nil)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        
-                        Spacer()
-                        
-                        // Edit button for conversation name
-                        Button(action: {
+                AppInfoCard {
+                    VStack(alignment: .leading, spacing: 12) {
+                        // Title with edit functionality
+                        HStack {
                             if isEditingConversationName {
-                                saveConversationName()
+                                TextField("Conversation name", text: $editedConversationName)
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                                    .onSubmit {
+                                        saveConversationName()
+                                    }
                             } else {
-                                startEditingConversationName()
+                                Text(currentSummary.display_name ?? "Untitled Conversation")
+                                    .font(.title2)
+                                    .fontWeight(.bold)
+                                    .lineLimit(nil)
+                                    .fixedSize(horizontal: false, vertical: true)
                             }
-                        }) {
-                            Image(systemName: isEditingConversationName ? "checkmark.circle.fill" : "pencil")
-                                .font(.title3)
-                                .foregroundColor(.blue)
+                            
+                            Spacer()
+                            
+                            // Edit button for conversation name
+                            AppIconButton(
+                                iconName: isEditingConversationName ? "checkmark.circle.fill" : "pencil",
+                                size: 32,
+                                backgroundColor: .accent,
+                                foregroundColor: .white
+                            ) {
+                                if isEditingConversationName {
+                                    saveConversationName()
+                                } else {
+                                    startEditingConversationName()
+                                }
+                            }
                         }
-                    }
-                    
-                    // Date and play button row
-                    HStack {
-                        if let date = createdDate {
-                            Text(DateUtilities.formatConversationDate(date))
-                                .font(.subheadline)
+                        
+                        // Date and play button row
+                        HStack {
+                            if let date = createdDate {
+                                Text(DateUtilities.formatConversationDate(date))
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            // Full conversation play button
+                            if !currentDetail.utterances.isEmpty {
+                                Button(action: {
+                                    if isPlayingFullConversation {
+                                        stopSequentialPlayback()
+                                    } else {
+                                        startSequentialPlayback()
+                                    }
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: isPlayingFullConversation ? "pause.circle.fill" : "play.circle.fill")
+                                            .font(.title2)
+                                        Text(isPlayingFullConversation ? "Pause" : (selectedSpeaker != nil ? "Play Filtered" : "Play All"))
+                                            .font(.subheadline)
+                                            .fontWeight(.medium)
+                                    }
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 8)
+                                    .background(Color.accent)
+                                    .cornerRadius(20)
+                                }
+                            }
+                        }
+                        
+                        if isPlayingFullConversation {
+                            Text("Playing utterance \(currentUtteranceIndex + 1) of \(selectedSpeaker != nil ? filteredUtterances.count : currentDetail.utterances.count)")
+                                .font(.caption)
                                 .foregroundColor(.secondary)
                         }
-                        
-                        Spacer()
-                        
-                        // Full conversation play button
-                        if !currentDetail.utterances.isEmpty {
-                            Button(action: {
-                                if isPlayingFullConversation {
-                                    stopSequentialPlayback()
-                                } else {
-                                    startSequentialPlayback()
-                                }
-                            }) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: isPlayingFullConversation ? "pause.circle.fill" : "play.circle.fill")
-                                        .font(.title2)
-                                    Text(isPlayingFullConversation ? "Pause" : (selectedSpeaker != nil ? "Play Filtered" : "Play All"))
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                }
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(Color.blue)
-                                .cornerRadius(20)
-                            }
-                        }
-                    }
-                    
-                    if isPlayingFullConversation {
-                        Text("Playing utterance \(currentUtteranceIndex + 1) of \(selectedSpeaker != nil ? filteredUtterances.count : currentDetail.utterances.count)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
                     }
                 }
-                .padding()
-                .background(Color.blue.opacity(0.08))
-                .cornerRadius(16)
                 
                 // Stats Card
-                VStack(spacing: 12) {
+                AppInfoCard {
                     HStack(spacing: 0) {
                         StatItem(
                             icon: "clock",
@@ -264,11 +264,8 @@ struct ConversationDetailContent: View {
                         )
                         .frame(maxWidth: .infinity)
                     }
+                    .padding(.vertical, 8)
                 }
-                .padding(.vertical, 16)
-                .padding(.horizontal, 20)
-                .background(Color.gray.opacity(0.08))
-                .cornerRadius(16)
                 
                 // Speaker Filter
                 if !uniqueSpeakers.isEmpty {
@@ -584,7 +581,7 @@ struct SpeakerFilterButton: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
-                    isSelected ? Color.blue : Color.gray.opacity(0.2)
+                    isSelected ? Color.accent : Color.lightGrayBackground
                 )
                 .foregroundColor(isSelected ? .white : .primary)
                 .cornerRadius(16)
@@ -648,7 +645,7 @@ struct UtteranceRow: View {
             AppSpeakerAvatar(speakerName: utterance.speaker_name, size: 36)
                 .overlay(
                     Circle()
-                        .stroke(isPlaying ? Color.blue : Color.clear, lineWidth: 2)
+                        .stroke(isPlaying ? Color.accent : Color.clear, lineWidth: 2)
                 )
             
             VStack(alignment: .leading, spacing: 8) {
@@ -666,35 +663,41 @@ struct UtteranceRow: View {
                         HStack(spacing: 6) {
                             Image(systemName: includedInPinecone ? "checkmark.circle.fill" : "circle")
                                 .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(includedInPinecone ? .green : .orange)
+                                .foregroundColor(includedInPinecone ? .success : .warning)
                             
                             Text("Pinecone")
                                 .font(.caption)
                                 .fontWeight(.medium)
-                                .foregroundColor(includedInPinecone ? .green : .orange)
+                                .foregroundColor(includedInPinecone ? .success : .warning)
                         }
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
-                        .background(includedInPinecone ? Color.green.opacity(0.1) : Color.orange.opacity(0.1))
+                        .background(includedInPinecone ? Color.success.opacity(0.1) : Color.warning.opacity(0.1))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(includedInPinecone ? Color.green : Color.orange, lineWidth: 1)
+                                .stroke(includedInPinecone ? Color.success : Color.warning, lineWidth: 1)
                         )
                         .cornerRadius(12)
                     }
                     .buttonStyle(.plain)
                     
-                    Button(action: {
+                    AppIconButton(
+                        iconName: "pencil",
+                        size: 24,
+                        backgroundColor: .accent,
+                        foregroundColor: .white
+                    ) {
                         startEditingSpeaker()
-                    }) {
-                        Image(systemName: "pencil")
-                            .font(.caption)
-                            .foregroundColor(.blue)
                     }
                     
                     Spacer()
                     
-                    Button(action: {
+                    AppIconButton(
+                        iconName: isPlaying ? "pause.circle.fill" : "play.circle.fill",
+                        size: 32,
+                        backgroundColor: isValidAudioURL ? .accent : .secondaryText,
+                        foregroundColor: .white
+                    ) {
                         print("🚨🚨🚨 BUTTON TAPPED! This should appear in logs!")
                         print("🚨🚨🚨 Speaker: \(utterance.speaker_name)")
                         print("🚨🚨🚨 Button is NOT disabled - action is running!")
@@ -704,14 +707,7 @@ struct UtteranceRow: View {
                         print("🎯 DEBUG: About to call onPlayTap()")
                         onPlayTap()
                         print("🎯 DEBUG: onPlayTap() has been called")
-                    }) {
-                        Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                            .font(.title3)
-                            .foregroundColor(isValidAudioURL ? .blue : .gray)
                     }
-                    .buttonStyle(.plain)
-                    .allowsHitTesting(true)
-                    .contentShape(Circle())
                     // .disabled(!isValidAudioURL) // TEMPORARILY DISABLED FOR DEBUG
                     
                     Text(utterance.start_time)
@@ -742,7 +738,7 @@ struct UtteranceRow: View {
                                         saveUtteranceText()
                                     }
                                     .font(.caption)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.accent)
                                 }
                             }
                         } else {
@@ -755,12 +751,13 @@ struct UtteranceRow: View {
                         if !isEditingText {
                             Spacer()
                             
-                            Button(action: {
+                            AppIconButton(
+                                iconName: "pencil",
+                                size: 24,
+                                backgroundColor: .accent,
+                                foregroundColor: .white
+                            ) {
                                 startEditingText()
-                            }) {
-                                Image(systemName: "pencil")
-                                    .font(.caption)
-                                    .foregroundColor(.blue)
                             }
                         }
                     }
@@ -770,16 +767,16 @@ struct UtteranceRow: View {
                 if !isValidAudioURL {
                     Text("⚠️ Audio not available")
                         .font(.caption2)
-                        .foregroundColor(.orange)
+                        .foregroundColor(.warning)
                 }
             }
         }
         .padding()
-        .background(isPlaying ? Color.blue.opacity(0.1) : Color.gray.opacity(0.05))
+        .background(isPlaying ? Color.accentLight : Color.lightGrayBackground)
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(isPlaying ? Color.blue : Color.clear, lineWidth: 2)
+                .stroke(isPlaying ? Color.accent : Color.clear, lineWidth: 2)
         )
         .sheet(isPresented: $showingSpeakerPicker) {
             SpeakerPickerView(
@@ -1007,7 +1004,7 @@ struct SpeakerPickerView: View {
                         Text(utterance.text)
                             .font(.body)
                             .padding(12)
-                            .background(Color.gray.opacity(0.1))
+                            .background(Color.lightGrayBackground)
                             .cornerRadius(8)
                         
                         Text("Current Speaker: \(utterance.speaker_name)")
@@ -1056,7 +1053,7 @@ struct SpeakerPickerView: View {
                                     
                                     if selectedSpeakerId == speaker.id {
                                         Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.blue)
+                                            .foregroundColor(.accent)
                                     }
                                 }
                                 .contentShape(Rectangle())
@@ -1076,7 +1073,7 @@ struct SpeakerPickerView: View {
                         if applyToAllUtterances {
                             Text("This will change the speaker for ALL utterances currently assigned to \"\(utterance.speaker_name)\" in this conversation only.")
                                 .font(.caption)
-                                .foregroundColor(.orange)
+                                .foregroundColor(.warning)
                                 .padding(.leading, 4)
                         }
                     }
@@ -1092,7 +1089,7 @@ struct SpeakerPickerView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Color.gray.opacity(0.2))
+                    .background(Color.lightGrayBackground)
                     .foregroundColor(.primary)
                     .cornerRadius(8)
                     
@@ -1101,7 +1098,7 @@ struct SpeakerPickerView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(canSave ? Color.blue : Color.gray.opacity(0.3))
+                    .background(canSave ? Color.accent : Color.lightGrayBackground)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                     .disabled(!canSave)

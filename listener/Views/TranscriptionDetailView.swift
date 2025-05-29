@@ -119,7 +119,7 @@ struct ConversationBubble: View {
                     Text(speaker)
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.accent)
                 }
                 
                 // Text
@@ -135,7 +135,7 @@ struct ConversationBubble: View {
                     .cornerRadius(12)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.gray.opacity(0.3), lineWidth: 0.5)
+                            .stroke(Color.mediumGrayBackground.opacity(0.5), lineWidth: 0.5)
                     )
             }
             
@@ -169,7 +169,7 @@ struct SummaryView: View {
                 if !summary.actionItems.isEmpty {
                     SummarySection(title: "Action Items", icon: "checkmark.circle") {
                         ForEach(summary.actionItems, id: \.self) { item in
-                            BulletPoint(text: item, color: .orange)
+                            BulletPoint(text: item, color: .warning)
                         }
                     }
                 }
@@ -186,8 +186,8 @@ struct SummaryView: View {
                                     .font(.caption)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
-                                    .background(Color.blue.opacity(0.1))
-                                    .foregroundColor(.blue)
+                                    .background(Color.lightGrayBackground)
+                                    .foregroundColor(.accent)
                                     .cornerRadius(8)
                             }
                         }
@@ -234,7 +234,7 @@ struct SummarySection<Content: View>: View {
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.gray.opacity(0.3), lineWidth: 0.5)
+                .stroke(Color.mediumGrayBackground.opacity(0.5), lineWidth: 0.5)
         )
         #endif
     }
@@ -261,7 +261,7 @@ struct BulletPoint: View {
     let text: String
     let color: Color
     
-    init(text: String, color: Color = .blue) {
+    init(text: String, color: Color = .accent) {
         self.text = text
         self.color = color
     }

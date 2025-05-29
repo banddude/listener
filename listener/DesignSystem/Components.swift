@@ -292,6 +292,136 @@ struct AppSpeakerAvatar: View {
     }
 }
 
+// MARK: - Info Card Component
+
+struct AppInfoCard<Content: View>: View {
+    let content: Content
+    
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.small) {
+            content
+        }
+        .padding(AppSpacing.medium)
+        .background(Color.lightGrayBackground)
+        .cornerRadius(12)
+    }
+}
+
+// MARK: - Icon Button Component
+
+struct AppIconButton: View {
+    let iconName: String
+    let size: CGFloat
+    let backgroundColor: Color
+    let foregroundColor: Color
+    let action: () -> Void
+    
+    init(
+        iconName: String,
+        size: CGFloat = 36,
+        backgroundColor: Color = .accent,
+        foregroundColor: Color = .white,
+        action: @escaping () -> Void
+    ) {
+        self.iconName = iconName
+        self.size = size
+        self.backgroundColor = backgroundColor
+        self.foregroundColor = foregroundColor
+        self.action = action
+    }
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: iconName)
+                .font(.system(size: size * 0.4, weight: .medium))
+                .foregroundColor(foregroundColor)
+                .frame(width: size, height: size)
+                .background(backgroundColor)
+                .clipShape(Circle())
+        }
+    }
+}
+
+// MARK: - Form Card Component
+
+struct AppFormCard<Content: View>: View {
+    let title: String?
+    let content: Content
+    
+    init(title: String? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.small) {
+            if let title = title {
+                Text(title)
+                    .appSubtitle()
+                    .foregroundColor(.primaryText)
+            }
+            
+            content
+        }
+        .padding(AppSpacing.medium)
+        .background(Color.cardBackground)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.cardBorder, lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Status Badge Component
+
+struct AppStatusBadge: View {
+    let text: String
+    let style: BadgeStyle
+    
+    enum BadgeStyle {
+        case success
+        case warning
+        case destructive
+        case info
+        case neutral
+        
+        var backgroundColor: Color {
+            switch self {
+            case .success: return .success.opacity(0.1)
+            case .warning: return .warning.opacity(0.1)
+            case .destructive: return .destructive.opacity(0.1)
+            case .info: return .accent.opacity(0.1)
+            case .neutral: return .lightGrayBackground
+            }
+        }
+        
+        var textColor: Color {
+            switch self {
+            case .success: return .success
+            case .warning: return .warning
+            case .destructive: return .destructive
+            case .info: return .accent
+            case .neutral: return .secondaryText
+            }
+        }
+    }
+    
+    var body: some View {
+        Text(text)
+            .appCaption()
+            .foregroundColor(style.textColor)
+            .padding(.horizontal, AppSpacing.small)
+            .padding(.vertical, AppSpacing.extraSmall)
+            .background(style.backgroundColor)
+            .cornerRadius(8)
+    }
+}
+
 // MARK: - Error Message Component
 
 struct AppErrorMessage: View {
@@ -318,7 +448,7 @@ struct StatItem: View {
         VStack(spacing: 4) {
             Image(systemName: icon)
                 .font(.title2)
-                .foregroundColor(.blue)
+                .foregroundColor(.accent)
             
             Text(title)
                 .font(.caption)
@@ -379,6 +509,41 @@ struct ComponentsPreview: View {
                     inactiveText: "Ready",
                     detailText: "Speech detected"
                 )
+                
+                // Info Card
+                AppInfoCard {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Info Card Example")
+                            .appSubtitle()
+                        Text("This is content inside an info card with consistent styling.")
+                            .appCaption()
+                    }
+                }
+                
+                // Icon Buttons
+                HStack(spacing: 12) {
+                    AppIconButton(iconName: "play.fill") {}
+                    AppIconButton(iconName: "pencil", backgroundColor: .success) {}
+                    AppIconButton(iconName: "trash", backgroundColor: .destructive) {}
+                }
+                
+                // Form Card
+                AppFormCard(title: "Form Section") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Name")
+                            .appCaption()
+                        Text("Sample form content goes here")
+                            .appBody()
+                    }
+                }
+                
+                // Status Badges
+                HStack(spacing: 8) {
+                    AppStatusBadge(text: "Success", style: .success)
+                    AppStatusBadge(text: "Warning", style: .warning)
+                    AppStatusBadge(text: "Error", style: .destructive)
+                    AppStatusBadge(text: "Info", style: .info)
+                }
                 
                 // Error Message
                 AppErrorMessage(message: "Something went wrong")
