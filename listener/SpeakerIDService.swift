@@ -84,7 +84,7 @@ class SpeakerIDService: ObservableObject {
     
     // New method for populating speaker dropdowns in editing UI
     func getAllSpeakersForSelection() async throws -> [Speaker] {
-        return try await getSpeakers()
+        try await getSpeakers()
     }
     
     func addSpeaker(name: String) async throws -> Speaker {

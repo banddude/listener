@@ -13,7 +13,7 @@ import SwiftUI
 extension Font {
     // MARK: - App Typography System
     static func appFont(size: CGFloat, weight: Font.Weight = .regular) -> Font {
-        return .system(size: size, weight: weight)
+        .system(size: size, weight: weight)
     }
 
     // MARK: - Standard Typography Scale (matching iOS defaults)

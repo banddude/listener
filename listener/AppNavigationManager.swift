@@ -6,7 +6,7 @@ enum TabIdentifier: Hashable {
 
 class AppNavigationManager: ObservableObject {
     @Published var selectedTab: TabIdentifier = .recorder // Default tab
-    @Published var conversationIdToView: String? = nil
+    @Published var conversationIdToView: String?
 
     func navigateToConversation(id: String) {
         conversationIdToView = id
