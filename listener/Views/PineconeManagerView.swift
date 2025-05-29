@@ -13,79 +13,72 @@ struct PineconeManagerView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Header
-                HStack {
-                    Text("Pinecone Manager")
-                        .font(.title2)
-                        .fontWeight(.semibold)
-                    
-                    Spacer()
-                    
-                    // Only refresh button now
-                    AppIconButton(
-                        iconName: "arrow.clockwise",
-                        size: 36,
-                        backgroundColor: Color.accent,
-                        foregroundColor: .white
-                    ) {
+        AppScrollContainer(spacing: 20) {
+            // Header
+            HStack {
+                Text("Pinecone Manager (\(speakers.count))")
+                    .appHeadline()
+                
+                Spacer()
+                
+                HStack(spacing: AppSpacing.small) {
+                    // Refresh button
+                    Button(action: {
                         refreshSpeakers()
+                    }) {
+                        Image(systemName: AppIcons.refresh)
+                            .font(.title2)
+                            .foregroundColor(.accent)
                     }
+                    .buttonStyle(.plain)
                     .disabled(isLoading)
                 }
+            }
+            .padding(.horizontal, AppSpacing.medium)
                 
-                // Speakers List
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("Speakers (\(speakers.count))")
-                            .font(.headline)
-                        
-                        Spacer()
-                        
-                        AppIconButton(
-                            iconName: "plus",
-                            size: 36,
-                            backgroundColor: Color.success,
-                            foregroundColor: .white
-                        ) {
-                            showingAddSpeaker = true
-                        }
-                    }
-                    
-                    if speakers.isEmpty && !isLoading {
-                        Text("No speakers found in the database.")
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .padding()
-                    } else {
-                        ForEach(speakers) { speaker in
-                            PineconeSpeakerCard(
-                                speaker: speaker,
-                                onAddEmbedding: { speakerName in
-                                    print("🟢 PineconeManagerView: Received callback with speakerName: '\(speakerName)'")
-                                    addEmbeddingItem = AddEmbeddingItem(speakerName: speakerName)
-                                    print("🟢 PineconeManagerView: Set addEmbeddingItem to: '\(String(describing: addEmbeddingItem))'")
-                                },
-                                onDeleteSpeaker: deleteSpeaker,
-                                onDeleteEmbedding: deleteEmbedding
-                            )
-                        }
-                    }
+            // Speakers Section
+            HStack {
+                Text("Voice Samples")
+                    .appHeadline()
+                
+                Spacer()
+                
+                Button(action: {
+                    showingAddSpeaker = true
+                }) {
+                    Image(systemName: AppIcons.add)
+                        .font(.title2)
+                        .foregroundColor(.success)
                 }
-                
-                if isLoading {
-                    HStack {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("Loading...")
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, AppSpacing.medium)
+                    
+            // Speakers List
+            if speakers.isEmpty && !isLoading {
+                AppEmptyState(
+                    icon: AppIcons.noSpeakers,
+                    title: "No voice samples found",
+                    subtitle: "Add voice samples to train speaker recognition"
+                )
+            } else {
+                ForEach(speakers) { speaker in
+                    PineconeSpeakerCard(
+                        speaker: speaker,
+                        onAddEmbedding: { speakerName in
+                            print("🟢 PineconeManagerView: Received callback with speakerName: '\(speakerName)'")
+                            addEmbeddingItem = AddEmbeddingItem(speakerName: speakerName)
+                            print("🟢 PineconeManagerView: Set addEmbeddingItem to: '\(String(describing: addEmbeddingItem))'")
+                        },
+                        onDeleteSpeaker: deleteSpeaker,
+                        onDeleteEmbedding: deleteEmbedding
+                    )
                 }
             }
-            .padding()
+                
+            if isLoading {
+                AppLoadingState(message: "Loading...")
+            }
         }
         .sheet(isPresented: $showingAddSpeaker) {
             PineconeAddSpeakerView {
@@ -224,16 +217,15 @@ struct PineconeSpeakerCard: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(speaker.name)
-                        .font(.headline)
+                        .appHeadline()
                     
                     Text("\(speaker.embeddings.count) voice samples")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .appCaption()
                 }
                 
                 Spacer()
                 
-                HStack(spacing: 8) {
+                HStack(spacing: AppSpacing.small) {
                     if !speaker.embeddings.isEmpty {
                         Button(action: {
                             withAnimation(.easeInOut(duration: 0.3)) {
@@ -241,43 +233,42 @@ struct PineconeSpeakerCard: View {
                             }
                         }) {
                             Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                                .foregroundColor(Color.accent)
+                                .font(.title2)
+                                .foregroundColor(.accent)
                         }
                         .buttonStyle(.plain)
                     }
                     
-                    AppIconButton(
-                        iconName: "plus.circle",
-                        size: 36,
-                        backgroundColor: Color.success,
-                        foregroundColor: .white
-                    ) {
+                    Button(action: {
                         print("🔵 PineconeSpeakerCard: Add button pressed for speaker: '\(speaker.name)'")
                         onAddEmbedding(speaker.name)
+                    }) {
+                        Image(systemName: "plus.circle")
+                            .font(.title2)
+                            .foregroundColor(.success)
                     }
+                    .buttonStyle(.plain)
                     
-                    AppIconButton(
-                        iconName: "trash",
-                        size: 36,
-                        backgroundColor: Color.destructive,
-                        foregroundColor: .white
-                    ) {
+                    Button(action: {
                         showingDeleteConfirmation = true
+                    }) {
+                        Image(systemName: "trash")
+                            .font(.title2)
+                            .foregroundColor(.destructive)
                     }
+                    .buttonStyle(.plain)
                 }
             }
             
             if !speaker.embeddings.isEmpty && isExpanded {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Embeddings:")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .appSubtitle()
                     
                     ForEach(speaker.embeddings) { embedding in
                         HStack {
                             Text(embedding.id)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .appCaption()
                             
                             Spacer()
                             
@@ -285,9 +276,10 @@ struct PineconeSpeakerCard: View {
                                 onDeleteEmbedding(embedding.id)
                             }) {
                                 Image(systemName: "trash")
-                                    .foregroundColor(Color.destructive)
                                     .font(.caption)
+                                    .foregroundColor(.destructive)
                             }
+                            .buttonStyle(.plain)
                         }
                         .padding(.vertical, 2)
                     }
@@ -301,7 +293,7 @@ struct PineconeSpeakerCard: View {
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.divider, lineWidth: 1)
+                .stroke(Color.cardBorder, lineWidth: 1)
         )
         .onTapGesture {
             if !speaker.embeddings.isEmpty {

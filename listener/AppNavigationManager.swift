@@ -1,11 +1,11 @@
 import SwiftUI
 
 enum TabIdentifier: Hashable {
-    case recorder, conversations, speakers, upload, pinecone // Add all your tabs
+    case recorder, conversations, speakers, pinecone
 }
 
 class AppNavigationManager: ObservableObject {
-    @Published var selectedTab: TabIdentifier = .recorder // Default tab
+    @Published var selectedTab: TabIdentifier = .recorder
     @Published var conversationIdToView: String?
 
     func navigateToConversation(id: String) {
@@ -17,4 +17,4 @@ class AppNavigationManager: ObservableObject {
     func clearConversationNavigation() {
         conversationIdToView = nil
     }
-} 
+}

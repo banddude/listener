@@ -3,23 +3,62 @@ import Foundation
 
 struct SpeakersListView: View {
     @State private var speakers: [Speaker] = []
+    @State private var pineconeSpeakers: [PineconeSpeaker] = []
     let speakerIDService: SpeakerIDService
     
     @State private var isRefreshing = false
+    @State private var isPineconeLoading = false
     @State private var showingAddSpeaker = false
+    @State private var showingAddPineconeSpeaker = false
+    @State private var addEmbeddingItem: AddEmbeddingItem?
     @State private var newSpeakerName = ""
     @State private var errorMessage = ""
+    @State private var selectedSegment = 0
+    
+    struct AddEmbeddingItem: Identifiable {
+        let id = UUID()
+        let speakerName: String
+    }
     
     var body: some View {
         AppScrollContainer(spacing: 20) {
-            // Header
-            AppSectionHeader(
-                title: "Speakers (\(speakers.count))",
-                actionIcon: AppIcons.add,
-                actionColor: .success
-            ) { showingAddSpeaker = true }
+            // Header with segmented control
+            VStack(spacing: 16) {
+                HStack {
+                    Text("Speaker Management")
+                        .appHeadline()
+                    
+                    Spacer()
+                    
+                    HStack(spacing: AppSpacing.small) {
+                        // Add button
+                        Button(action: {
+                            if selectedSegment == 0 {
+                                showingAddSpeaker = true
+                            } else {
+                                showingAddPineconeSpeaker = true
+                            }
+                        }) {
+                            Image(systemName: AppIcons.add)
+                                .font(.title2)
+                                .foregroundColor(.success)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
                 
-                // Speakers List
+                // Segmented control
+                Picker("View Type", selection: $selectedSegment) {
+                    Text("Conversation Speakers (\(speakers.count))").tag(0)
+                    Text("Voice Samples (\(pineconeSpeakers.count))").tag(1)
+                }
+                .pickerStyle(SegmentedPickerStyle())
+            }
+            .padding(.horizontal, AppSpacing.medium)
+                
+            // Content based on selected segment
+            if selectedSegment == 0 {
+                // Conversation Speakers
                 if speakers.isEmpty && !isRefreshing {
                     AppEmptyState(
                         icon: AppIcons.noSpeakers,
@@ -33,7 +72,7 @@ struct SpeakersListView: View {
                                 speaker: speaker,
                                 speakerIDService: speakerIDService
                             ) {
-                                    refreshSpeakers()
+                                refreshSpeakers()
                             }
                         }
                     }
@@ -42,21 +81,65 @@ struct SpeakersListView: View {
                 if isRefreshing {
                     AppLoadingState(message: "Loading speakers...")
                 }
+            } else {
+                // Pinecone Voice Samples
+                if pineconeSpeakers.isEmpty && !isPineconeLoading {
+                    AppEmptyState(
+                        icon: AppIcons.noSpeakers,
+                        title: "No voice samples found",
+                        subtitle: "Add voice samples to train speaker recognition"
+                    )
+                } else {
+                    ForEach(pineconeSpeakers) { speaker in
+                        PineconeSpeakerCard(
+                            speaker: speaker,
+                            onAddEmbedding: { speakerName in
+                                addEmbeddingItem = AddEmbeddingItem(speakerName: speakerName)
+                            },
+                            onDeleteSpeaker: deletePineconeSpeaker,
+                            onDeleteEmbedding: deletePineconeEmbedding
+                        )
+                    }
+                }
+                
+                if isPineconeLoading {
+                    AppLoadingState(message: "Loading voice samples...")
+                }
+            }
         }
         .refreshable {
-            refreshSpeakers()
+            refreshAllData()
         }
         .sheet(isPresented: $showingAddSpeaker) {
             AddSpeakerView(
                 speakerIDService: speakerIDService
             ) {
-                    showingAddSpeaker = false
-                    refreshSpeakers()
+                showingAddSpeaker = false
+                refreshSpeakers()
+            }
+        }
+        .sheet(isPresented: $showingAddPineconeSpeaker) {
+            PineconeAddSpeakerView {
+                showingAddPineconeSpeaker = false
+                refreshPineconeSpeakers()
+            }
+        }
+        .sheet(item: $addEmbeddingItem) { item in
+            PineconeAddEmbeddingView(
+                speakerName: item.speakerName
+            ) {
+                addEmbeddingItem = nil
+                refreshPineconeSpeakers()
             }
         }
         .onAppear {
-            refreshSpeakers()
+            refreshAllData()
         }
+    }
+    
+    private func refreshAllData() {
+        refreshSpeakers()
+        refreshPineconeSpeakers()
     }
     
     private func refreshSpeakers() {
@@ -77,6 +160,84 @@ struct SpeakersListView: View {
                     self.errorMessage = "Failed to load speakers: \(error.localizedDescription)"
                     self.isRefreshing = false
                 }
+            }
+        }
+    }
+    
+    private func refreshPineconeSpeakers() {
+        isPineconeLoading = true
+        
+        Task {
+            do {
+                let url = URL(string: "\(AppConstants.baseURL)/api/pinecone/speakers")!
+                let (data, response) = try await URLSession.shared.data(from: url)
+                
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw URLError(.badServerResponse)
+                }
+                
+                if httpResponse.statusCode == 200 {
+                    let speakersResponse = try JSONDecoder().decode(PineconeSpeakersResponse.self, from: data)
+                    
+                    await MainActor.run {
+                        self.pineconeSpeakers = speakersResponse.speakers
+                        self.isPineconeLoading = false
+                    }
+                } else {
+                    throw URLError(.badServerResponse)
+                }
+            } catch {
+                print("❌ Error loading Pinecone speakers: \(error)")
+                await MainActor.run {
+                    self.isPineconeLoading = false
+                    self.pineconeSpeakers = []
+                }
+            }
+        }
+    }
+    
+    private func deletePineconeSpeaker(_ speakerName: String) {
+        Task {
+            do {
+                let url = URL(string: "\(AppConstants.baseURL)/api/pinecone/speakers/\(speakerName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? speakerName)")!
+                var request = URLRequest(url: url)
+                request.httpMethod = "DELETE"
+                
+                let (_, response) = try await URLSession.shared.data(for: request)
+                
+                guard let httpResponse = response as? HTTPURLResponse,
+                      httpResponse.statusCode == 200 else {
+                    throw URLError(.badServerResponse)
+                }
+                
+                await MainActor.run {
+                    self.refreshPineconeSpeakers()
+                }
+            } catch {
+                print("❌ Error deleting Pinecone speaker: \(error)")
+            }
+        }
+    }
+    
+    private func deletePineconeEmbedding(_ embeddingId: String) {
+        Task {
+            do {
+                let url = URL(string: "\(AppConstants.baseURL)/api/pinecone/embeddings/\(embeddingId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? embeddingId)")!
+                var request = URLRequest(url: url)
+                request.httpMethod = "DELETE"
+                
+                let (_, response) = try await URLSession.shared.data(for: request)
+                
+                guard let httpResponse = response as? HTTPURLResponse,
+                      httpResponse.statusCode == 200 else {
+                    throw URLError(.badServerResponse)
+                }
+                
+                await MainActor.run {
+                    self.refreshPineconeSpeakers()
+                }
+            } catch {
+                print("❌ Error deleting Pinecone embedding: \(error)")
             }
         }
     }
@@ -103,13 +264,10 @@ struct SpeakerCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                // Speaker Avatar
-                AppSpeakerAvatar(speakerName: speaker.name, size: 44)
-                
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
                         Text(speaker.name)
-                            .font(.headline)
+                            .appHeadline()
                         
                         // Pinecone connection status icon
                         Image(systemName: isLinkedToPinecone ? "checkmark.circle.fill" : "circle")
@@ -120,88 +278,78 @@ struct SpeakerCard: View {
                     // Show linked Pinecone name if available
                     if let pineconeSpeekerName = speaker.pinecone_speaker_name {
                         Text("linked to: \(pineconeSpeekerName)")
-                            .font(.caption2)
+                            .appCaption()
                             .foregroundColor(.success)
                     }
                     
                     HStack(spacing: 12) {
                         if let utteranceCount = speaker.utterance_count {
                             Text("\(utteranceCount) utterances")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .appCaption()
                         }
                         
                         if let totalDuration = speaker.total_duration {
                             Text(DurationUtilities.formatDurationCompact(TimeInterval(totalDuration)))
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .appCaption()
                         }
                     }
                 }
                 
                 Spacer()
                 
-                // Action buttons
-                VStack(spacing: 8) {
-                    HStack(spacing: 12) {
-                        AppIconButton(
-                            iconName: "pencil",
-                            size: 32,
-                            backgroundColor: .accent,
-                            foregroundColor: .white
-                        ) {
-                            editedName = speaker.name
-                            showingEditName = true
+                HStack(spacing: AppSpacing.small) {
+                    // Pinecone link/unlink button (leftmost)
+                    if isLinking {
+                        ProgressView()
+                            .scaleEffect(0.7)
+                    } else if isLinkedToPinecone {
+                        Button(action: {
+                            unlinkFromPinecone()
+                        }) {
+                            Image(systemName: "link.slash")
+                                .font(.title2)
+                                .foregroundColor(.destructive)
                         }
-                        
-                        AppIconButton(
-                            iconName: "info.circle",
-                            size: 32,
-                            backgroundColor: .success,
-                            foregroundColor: .white
-                        ) {
-                            showingDetails = true
+                        .buttonStyle(.plain)
+                    } else {
+                        Button(action: {
+                            loadPineconeSpeekersAndShowPicker()
+                        }) {
+                            Image(systemName: "link")
+                                .font(.title2)
+                                .foregroundColor(.accent)
                         }
+                        .buttonStyle(.plain)
                     }
                     
-                    // Pinecone link/unlink button
-                    if isLinkedToPinecone {
-                        if isLinking {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                                .frame(width: 32, height: 32)
-                        } else {
-                            AppIconButton(
-                                iconName: "link.slash",
-                                size: 32,
-                                backgroundColor: .destructive,
-                                foregroundColor: .white
-                            ) {
-                                unlinkFromPinecone()
-                            }
-                        }
-                    } else {
-                        if isLinking {
-                            ProgressView()
-                                .scaleEffect(0.7)
-                                .frame(width: 32, height: 32)
-                        } else {
-                            AppIconButton(
-                                iconName: "link",
-                                size: 32,
-                                backgroundColor: .accent,
-                                foregroundColor: .white
-                            ) {
-                                loadPineconeSpeekersAndShowPicker()
-                            }
-                        }
+                    Button(action: {
+                        editedName = speaker.name
+                        showingEditName = true
+                    }) {
+                        Image(systemName: "pencil")
+                            .font(.title2)
+                            .foregroundColor(.accent)
                     }
+                    .buttonStyle(.plain)
+                    
+                    Button(action: {
+                        showingDetails = true
+                    }) {
+                        Image(systemName: "info.circle")
+                            .font(.title2)
+                            .foregroundColor(.success)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
         .padding()
         .background(Color.lightGrayBackground)
         .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.cardBorder, lineWidth: 1)
+        )
         .sheet(isPresented: $showingDetails) {
             SpeakerDetailView(
                 speaker: speaker,
@@ -351,7 +499,7 @@ struct SpeakerDetailView: View {
                     AppInfoCard {
                         VStack(alignment: .leading, spacing: 12) {
                             Text("Statistics")
-                                .font(.headline)
+                                .appHeadline()
                             
                             HStack(spacing: 20) {
                                 StatItem(
@@ -421,8 +569,7 @@ struct PineconeSpeakerPickerView: View {
         NavigationView {
             VStack(spacing: 20) {
                 Text("Link to Pinecone Speaker")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                    .appTitle()
                     .padding(.top)
                 
                 if isLoading || (!hasCompletedInitialLoad && availableSpeekers.isEmpty) {
@@ -446,7 +593,7 @@ struct PineconeSpeakerPickerView: View {
                 } else {
                     VStack(alignment: .leading, spacing: 16) {
                         Text("Select a Pinecone speaker:")
-                            .font(.headline)
+                            .appHeadline()
                         
                         ScrollView {
                             LazyVStack(spacing: 8) {
@@ -455,7 +602,7 @@ struct PineconeSpeakerPickerView: View {
                                         AppSpeakerAvatar(speakerName: speakerName, size: 32)
                                         
                                         Text(speakerName)
-                                            .font(.subheadline)
+                                            .appSubtitle()
                                         
                                         Spacer()
                                         
@@ -502,8 +649,8 @@ struct PineconeSpeakerPickerView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Color.mediumGrayBackground)
-                    .foregroundColor(.primaryText)
+                    .background(Color.buttonSecondaryBackground)
+                    .foregroundColor(.buttonSecondaryText)
                     .cornerRadius(8)
                     
                     Button("Link Speaker") {
@@ -513,8 +660,8 @@ struct PineconeSpeakerPickerView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(canLink ? Color.success : Color.mediumGrayBackground)
-                    .foregroundColor(.white)
+                    .background(canLink ? Color.success : Color.buttonSecondaryBackground)
+                    .foregroundColor(canLink ? .white : .buttonSecondaryText)
                     .cornerRadius(8)
                     .disabled(!canLink)
                 }
@@ -544,6 +691,396 @@ struct PineconeSpeakerPickerView: View {
         } else {
             return !selectedSpeeker.isEmpty
         }
+    }
+}
+
+struct PineconeSpeakerCard: View {
+    let speaker: PineconeSpeaker
+    let onAddEmbedding: (String) -> Void
+    let onDeleteSpeaker: (String) -> Void
+    let onDeleteEmbedding: (String) -> Void
+    
+    @State private var showingDeleteConfirmation = false
+    @State private var isExpanded = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(speaker.name)
+                        .appHeadline()
+                    
+                    Text("\(speaker.embeddings.count) voice samples")
+                        .appCaption()
+                }
+                
+                Spacer()
+                
+                HStack(spacing: AppSpacing.small) {
+                    if !speaker.embeddings.isEmpty {
+                        Button(action: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                isExpanded.toggle()
+                            }
+                        }) {
+                            Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                .font(.title2)
+                                .foregroundColor(.accent)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    Button(action: {
+                        onAddEmbedding(speaker.name)
+                    }) {
+                        Image(systemName: "plus.circle")
+                            .font(.title2)
+                            .foregroundColor(.success)
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Button(action: {
+                        showingDeleteConfirmation = true
+                    }) {
+                        Image(systemName: "trash")
+                            .font(.title2)
+                            .foregroundColor(.destructive)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            
+            if !speaker.embeddings.isEmpty && isExpanded {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Embeddings:")
+                        .appSubtitle()
+                    
+                    ForEach(speaker.embeddings) { embedding in
+                        HStack {
+                            Text(embedding.id)
+                                .appCaption()
+                            
+                            Spacer()
+                            
+                            Button(action: {
+                                onDeleteEmbedding(embedding.id)
+                            }) {
+                                Image(systemName: "trash")
+                                    .font(.caption)
+                                    .foregroundColor(.destructive)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+                .padding(.top, 4)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding()
+        .background(Color.lightGrayBackground)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.cardBorder, lineWidth: 1)
+        )
+        .onTapGesture {
+            if !speaker.embeddings.isEmpty {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isExpanded.toggle()
+                }
+            }
+        }
+        .confirmationDialog(
+            "Delete Speaker",
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) {
+                onDeleteSpeaker(speaker.name)
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Are you sure you want to delete \(speaker.name)?")
+        }
+    }
+}
+
+struct PineconeAddSpeakerView: View {
+    let onSpeakerAdded: () -> Void
+    
+    @State private var speakerName = ""
+    @State private var selectedAudioURL: URL?
+    @State private var isLoading = false
+    @State private var errorMessage = ""
+    @State private var showingDocumentPicker = false
+    
+    var body: some View {
+        Form {
+            Section(header: Text("Speaker Details")) {
+                TextField("Speaker Name", text: $speakerName)
+            }
+            
+            Section(header: Text("Voice Sample")) {
+                Button(action: {
+                    showingDocumentPicker = true
+                }) {
+                    HStack {
+                        Image(systemName: "mic")
+                        if let url = selectedAudioURL {
+                            Text(url.lastPathComponent)
+                                .foregroundColor(.primary)
+                        } else {
+                            Text("Choose Audio File")
+                                .foregroundColor(Color.accent)
+                        }
+                        Spacer()
+                    }
+                }
+            }
+            
+            if !errorMessage.isEmpty {
+                Section {
+                    Text(errorMessage)
+                        .foregroundColor(Color.destructive)
+                }
+            }
+        }
+        .navigationTitle("Add Speaker")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") {
+                    onSpeakerAdded()
+                }
+            }
+            
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Add") {
+                    addSpeaker()
+                }
+                .disabled(speakerName.isEmpty || selectedAudioURL == nil || isLoading)
+            }
+        }
+        .fileImporter(
+            isPresented: $showingDocumentPicker,
+            allowedContentTypes: [.audio],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    selectedAudioURL = url
+                }
+            case .failure(let error):
+                errorMessage = "Failed to select file: \(error.localizedDescription)"
+            }
+        }
+    }
+    
+    private func addSpeaker() {
+        guard let audioURL = selectedAudioURL else { return }
+        
+        isLoading = true
+        errorMessage = ""
+        
+        Task {
+            do {
+                let url = URL(string: "\(AppConstants.baseURL)/api/pinecone/speakers")!
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"
+                
+                let boundary = UUID().uuidString
+                request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+                
+                let audioData = try Data(contentsOf: audioURL)
+                let formData = createMultipartFormData(
+                    boundary: boundary,
+                    speakerName: speakerName,
+                    audioData: audioData,
+                    fileName: audioURL.lastPathComponent
+                )
+                
+                let (_, response) = try await URLSession.shared.upload(for: request, from: formData)
+                
+                guard let httpResponse = response as? HTTPURLResponse,
+                      httpResponse.statusCode == 200 else {
+                    throw URLError(.badServerResponse)
+                }
+                
+                await MainActor.run {
+                    self.onSpeakerAdded()
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = "Failed to add speaker: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+            }
+        }
+    }
+    
+    private func createMultipartFormData(boundary: String, speakerName: String, audioData: Data, fileName: String) -> Data {
+        var formData = Data()
+        
+        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+        formData.append("Content-Disposition: form-data; name=\"speaker_name\"\r\n\r\n".data(using: .utf8)!)
+        formData.append("\(speakerName)\r\n".data(using: .utf8)!)
+        
+        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+        formData.append("Content-Disposition: form-data; name=\"audio_file\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
+        formData.append("Content-Type: audio/mpeg\r\n\r\n".data(using: .utf8)!)
+        formData.append(audioData)
+        formData.append("\r\n".data(using: .utf8)!)
+        
+        formData.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        return formData
+    }
+}
+
+struct PineconeAddEmbeddingView: View {
+    let speakerName: String
+    let onEmbeddingAdded: () -> Void
+    
+    @State private var selectedAudioURL: URL?
+    @State private var isLoading = false
+    @State private var errorMessage = ""
+    @State private var showingDocumentPicker = false
+    
+    var body: some View {
+        Form {
+            Section {
+                HStack {
+                    Image(systemName: "person.circle.fill")
+                        .foregroundColor(Color.accent)
+                        .font(.title)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Adding voice sample for:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text(speakerName)
+                            .font(.headline)
+                    }
+                    Spacer()
+                }
+                .padding(.vertical, 8)
+            }
+            
+            Section(header: Text("Voice Sample")) {
+                Button(action: {
+                    showingDocumentPicker = true
+                }) {
+                    HStack {
+                        Image(systemName: "mic")
+                        if let url = selectedAudioURL {
+                            Text(url.lastPathComponent)
+                                .foregroundColor(.primary)
+                        } else {
+                            Text("Choose Audio File")
+                                .foregroundColor(Color.accent)
+                        }
+                        Spacer()
+                    }
+                }
+            }
+            
+            if !errorMessage.isEmpty {
+                Section {
+                    Text(errorMessage)
+                        .foregroundColor(Color.destructive)
+                }
+            }
+        }
+        .navigationTitle("Add Voice Sample")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") {
+                    onEmbeddingAdded()
+                }
+            }
+            
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Add") {
+                    addEmbedding()
+                }
+                .disabled(selectedAudioURL == nil || isLoading)
+            }
+        }
+        .fileImporter(
+            isPresented: $showingDocumentPicker,
+            allowedContentTypes: [.audio],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    selectedAudioURL = url
+                }
+            case .failure(let error):
+                errorMessage = "Failed to select file: \(error.localizedDescription)"
+            }
+        }
+    }
+    
+    private func addEmbedding() {
+        guard let audioURL = selectedAudioURL else { return }
+        
+        isLoading = true
+        errorMessage = ""
+        
+        Task {
+            do {
+                let url = URL(string: "\(AppConstants.baseURL)/api/pinecone/embeddings")!
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"
+                
+                let boundary = UUID().uuidString
+                request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+                
+                let audioData = try Data(contentsOf: audioURL)
+                let formData = createMultipartFormData(
+                    boundary: boundary,
+                    speakerName: speakerName,
+                    audioData: audioData,
+                    fileName: audioURL.lastPathComponent
+                )
+                
+                let (_, response) = try await URLSession.shared.upload(for: request, from: formData)
+                
+                guard let httpResponse = response as? HTTPURLResponse,
+                      httpResponse.statusCode == 200 else {
+                    throw URLError(.badServerResponse)
+                }
+                
+                await MainActor.run {
+                    self.onEmbeddingAdded()
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = "Failed to add embedding: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+            }
+        }
+    }
+    
+    private func createMultipartFormData(boundary: String, speakerName: String, audioData: Data, fileName: String) -> Data {
+        var formData = Data()
+        
+        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+        formData.append("Content-Disposition: form-data; name=\"speaker_name\"\r\n\r\n".data(using: .utf8)!)
+        formData.append("\(speakerName)\r\n".data(using: .utf8)!)
+        
+        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+        formData.append("Content-Disposition: form-data; name=\"audio_file\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
+        formData.append("Content-Type: audio/mpeg\r\n\r\n".data(using: .utf8)!)
+        formData.append(audioData)
+        formData.append("\r\n".data(using: .utf8)!)
+        
+        formData.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        return formData
     }
 }
 

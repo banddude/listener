@@ -141,16 +141,14 @@ struct ConversationDetailContent: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
+        AppScrollContainer(spacing: 20) {
                 // Refresh indicator
                 if isRefreshing {
                     HStack {
                         ProgressView()
                             .scaleEffect(0.8)
                         Text("Updating conversation...")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+                            .appCaption()
                         Spacer()
                     }
                     .padding(.horizontal)
@@ -166,16 +164,14 @@ struct ConversationDetailContent: View {
                         HStack {
                             if isEditingConversationName {
                                 TextField("Conversation name", text: $editedConversationName)
-                                    .font(.title2)
-                                    .fontWeight(.bold)
+                                    .appTitle()
                                     .textFieldStyle(RoundedBorderTextFieldStyle())
                                     .onSubmit {
                                         saveConversationName()
                                     }
                             } else {
                                 Text(currentSummary.display_name ?? "Untitled Conversation")
-                                    .font(.title2)
-                                    .fontWeight(.bold)
+                                    .appTitle()
                                     .lineLimit(nil)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
@@ -183,26 +179,25 @@ struct ConversationDetailContent: View {
                             Spacer()
                             
                             // Edit button for conversation name
-                            AppIconButton(
-                                iconName: isEditingConversationName ? "checkmark.circle.fill" : "pencil",
-                                size: 32,
-                                backgroundColor: .accent,
-                                foregroundColor: .white
-                            ) {
+                            Button(action: {
                                 if isEditingConversationName {
                                     saveConversationName()
                                 } else {
                                     startEditingConversationName()
                                 }
+                            }) {
+                                Image(systemName: isEditingConversationName ? "checkmark.circle.fill" : "pencil")
+                                    .font(.title2)
+                                    .foregroundColor(.accent)
                             }
+                            .buttonStyle(.plain)
                         }
                         
                         // Date and play button row
                         HStack {
                             if let date = createdDate {
                                 Text(DateUtilities.formatConversationDate(date))
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                                    .appSubtitle()
                             }
                             
                             Spacer()
@@ -220,8 +215,7 @@ struct ConversationDetailContent: View {
                                         Image(systemName: isPlayingFullConversation ? "pause.circle.fill" : "play.circle.fill")
                                             .font(.title2)
                                         Text(isPlayingFullConversation ? "Pause" : (selectedSpeaker != nil ? "Play Filtered" : "Play All"))
-                                            .font(.subheadline)
-                                            .fontWeight(.medium)
+                                            .appSubtitle()
                                     }
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 16)
@@ -234,8 +228,7 @@ struct ConversationDetailContent: View {
                         
                         if isPlayingFullConversation {
                             Text("Playing utterance \(currentUtteranceIndex + 1) of \(selectedSpeaker != nil ? filteredUtterances.count : currentDetail.utterances.count)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .appCaption()
                         }
                     }
                 }
@@ -271,7 +264,7 @@ struct ConversationDetailContent: View {
                 if !uniqueSpeakers.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Filter by Speaker")
-                            .font(.headline)
+                            .appHeadline()
                         
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
@@ -304,12 +297,11 @@ struct ConversationDetailContent: View {
                             .foregroundColor(.gray)
                         
                         Text("No utterances found")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
+                            .appHeadline()
+                            .foregroundColor(.secondaryText)
                         
                         Text("This conversation hasn't been processed yet")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+                            .appSubtitle()
                             .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity)
@@ -336,8 +328,6 @@ struct ConversationDetailContent: View {
                         }
                     }
                 }
-            }
-            .padding()
         }
         .onDisappear {
             cleanupAudioPlayer()
@@ -576,14 +566,13 @@ struct SpeakerFilterButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.caption)
-                .fontWeight(.medium)
+                .appCaption()
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
                     isSelected ? Color.accent : Color.lightGrayBackground
                 )
-                .foregroundColor(isSelected ? .white : .primary)
+                .foregroundColor(isSelected ? .white : .primaryText)
                 .cornerRadius(16)
         }
         .buttonStyle(PlainButtonStyle())
@@ -607,6 +596,7 @@ struct UtteranceRow: View {
     @State private var showingSpeakerPicker = false
     @State private var applyToAllUtterances = false
     @State private var isSavingEdit = false
+    @State private var isPineconeToggling = false
     
     // Access to the SpeakerIDService through environment
     @EnvironmentObject private var speakerIDService: SpeakerIDService
@@ -649,55 +639,38 @@ struct UtteranceRow: View {
                 )
             
             VStack(alignment: .leading, spacing: 8) {
-                // Speaker name row with edit functionality
+                // Speaker name row with inline edit functionality
                 HStack {
+                    // Tappable speaker name for editing
                     Text(utterance.speaker_name)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.primary)
-                    
-                    // Pinecone inclusion status badge - MUCH MORE PROMINENT AND ALWAYS VISIBLE
-                    Button(action: {
-                        togglePineconeInclusion()
-                    }) {
-                        HStack(spacing: 6) {
-                            Image(systemName: includedInPinecone ? "checkmark.circle.fill" : "circle")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(includedInPinecone ? .success : .warning)
-                            
-                            Text("Pinecone")
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .foregroundColor(includedInPinecone ? .success : .warning)
+                        .appHeadline()
+                        .onTapGesture {
+                            startEditingSpeaker()
                         }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(includedInPinecone ? Color.success.opacity(0.1) : Color.warning.opacity(0.1))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(includedInPinecone ? Color.success : Color.warning, lineWidth: 1)
-                        )
-                        .cornerRadius(12)
-                    }
-                    .buttonStyle(.plain)
                     
-                    AppIconButton(
-                        iconName: "pencil",
-                        size: 24,
-                        backgroundColor: .accent,
-                        foregroundColor: .white
-                    ) {
-                        startEditingSpeaker()
+                    // Pinecone inclusion toggle with loading state
+                    HStack(spacing: 6) {
+                        Text("Pinecone")
+                            .appCaption()
+                        
+                        if isPineconeToggling {
+                            ProgressView()
+                                .scaleEffect(0.6)
+                        } else {
+                            Toggle("", isOn: Binding(
+                                get: { includedInPinecone },
+                                set: { _ in 
+                                    isPineconeToggling = true
+                                    togglePineconeInclusion() 
+                                }
+                            ))
+                            .scaleEffect(0.8)
+                        }
                     }
                     
                     Spacer()
                     
-                    AppIconButton(
-                        iconName: isPlaying ? "pause.circle.fill" : "play.circle.fill",
-                        size: 32,
-                        backgroundColor: isValidAudioURL ? .accent : .secondaryText,
-                        foregroundColor: .white
-                    ) {
+                    Button(action: {
                         print("🚨🚨🚨 BUTTON TAPPED! This should appear in logs!")
                         print("🚨🚨🚨 Speaker: \(utterance.speaker_name)")
                         print("🚨🚨🚨 Button is NOT disabled - action is running!")
@@ -707,66 +680,57 @@ struct UtteranceRow: View {
                         print("🎯 DEBUG: About to call onPlayTap()")
                         onPlayTap()
                         print("🎯 DEBUG: onPlayTap() has been called")
+                    }) {
+                        Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(isValidAudioURL ? .accent : .secondaryText)
                     }
+                    .buttonStyle(.plain)
                     // .disabled(!isValidAudioURL) // TEMPORARILY DISABLED FOR DEBUG
                     
                     Text(utterance.start_time)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .appCaption()
                 }
                 
-                // Utterance text with edit functionality
+                // Utterance text with inline edit functionality
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        if isEditingText {
-                            VStack(alignment: .leading, spacing: 8) {
-                                TextField("Utterance text", text: $editedText, axis: .vertical)
-                                    .font(.body)
-                                    .textFieldStyle(RoundedBorderTextFieldStyle())
-                                    .lineLimit(3...10)
-                                
-                                HStack {
-                                    Button("Cancel") {
-                                        cancelTextEdit()
-                                    }
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                    
-                                    Spacer()
-                                    
-                                    Button("Save") {
-                                        saveUtteranceText()
-                                    }
-                                    .font(.caption)
-                                    .foregroundColor(.accent)
-                                }
-                            }
-                        } else {
-                            Text(utterance.text)
-                                .font(.body)
-                                .foregroundColor(.primary)
-                                .fixedSize(horizontal: false, vertical: true)
-                        }
-                        
-                        if !isEditingText {
-                            Spacer()
+                    if isEditingText {
+                        VStack(alignment: .leading, spacing: 8) {
+                            TextField("Utterance text", text: $editedText, axis: .vertical)
+                                .appBody()
+                                .textFieldStyle(RoundedBorderTextFieldStyle())
+                                .lineLimit(3...10)
                             
-                            AppIconButton(
-                                iconName: "pencil",
-                                size: 24,
-                                backgroundColor: .accent,
-                                foregroundColor: .white
-                            ) {
+                            HStack {
+                                Button("Cancel") {
+                                    cancelTextEdit()
+                                }
+                                .appCaption()
+                                
+                                Spacer()
+                                
+                                Button("Save") {
+                                    saveUtteranceText()
+                                }
+                                .appCaption()
+                                .foregroundColor(.accent)
+                            }
+                        }
+                    } else {
+                        // Tappable utterance text for editing
+                        Text(utterance.text)
+                            .appBody()
+                            .fixedSize(horizontal: false, vertical: true)
+                            .onTapGesture {
                                 startEditingText()
                             }
-                        }
                     }
                 }
                 
                 // Show audio URL status if invalid
                 if !isValidAudioURL {
                     Text("⚠️ Audio not available")
-                        .font(.caption2)
+                        .appCaption()
                         .foregroundColor(.warning)
                 }
             }
@@ -776,7 +740,7 @@ struct UtteranceRow: View {
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(isPlaying ? Color.accent : Color.clear, lineWidth: 2)
+                .stroke(isPlaying ? Color.accent : Color.cardBorder, lineWidth: 1)
         )
         .sheet(isPresented: $showingSpeakerPicker) {
             SpeakerPickerView(
@@ -947,9 +911,6 @@ struct UtteranceRow: View {
         let newStatus = !includedInPinecone
         print("🎯 Toggling Pinecone inclusion for utterance \(utterance.id) from \(includedInPinecone) to \(newStatus)")
         
-        // Show loading state
-        isSavingEdit = true
-        
         Task {
             do {
                 let response = try await speakerIDService.toggleUtterancePineconeInclusion(
@@ -958,7 +919,7 @@ struct UtteranceRow: View {
                 )
                 
                 await MainActor.run {
-                    isSavingEdit = false
+                    isPineconeToggling = false
                     print("✅ Pinecone inclusion toggle completed: \(response.message)")
                     
                     // Trigger full conversation reload to refresh the inclusion status
@@ -967,7 +928,7 @@ struct UtteranceRow: View {
             } catch {
                 print("❌ Error toggling Pinecone inclusion: \(error.localizedDescription)")
                 await MainActor.run {
-                    isSavingEdit = false
+                    isPineconeToggling = false
                     
                     // Still trigger reload to ensure UI consistency
                     onNeedsFullReload()
@@ -1068,11 +1029,11 @@ struct SpeakerPickerView: View {
                     // Apply to all option
                     VStack(alignment: .leading, spacing: 8) {
                         Toggle("Apply to all utterances by \"\(utterance.speaker_name)\" in this conversation", isOn: $applyToAllUtterances)
-                            .font(.subheadline)
+                            .appSubtitle()
                         
                         if applyToAllUtterances {
                             Text("This will change the speaker for ALL utterances currently assigned to \"\(utterance.speaker_name)\" in this conversation only.")
-                                .font(.caption)
+                                .appCaption()
                                 .foregroundColor(.warning)
                                 .padding(.leading, 4)
                         }
@@ -1089,8 +1050,8 @@ struct SpeakerPickerView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Color.lightGrayBackground)
-                    .foregroundColor(.primary)
+                    .background(Color.buttonSecondaryBackground)
+                    .foregroundColor(.buttonSecondaryText)
                     .cornerRadius(8)
                     
                     Button("Save Changes") {
@@ -1098,7 +1059,7 @@ struct SpeakerPickerView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(canSave ? Color.accent : Color.lightGrayBackground)
+                    .background(canSave ? Color.accent : Color.buttonSecondaryBackground)
                     .foregroundColor(.white)
                     .cornerRadius(8)
                     .disabled(!canSave)

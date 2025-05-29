@@ -47,16 +47,24 @@ struct ListenerView: View {
     
     private var headerSection: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Voice Recorder")
-                    .appTitle()
-                
-                Text("Record and process conversations")
-                    .appSubtitle()
-            }
+            Text("Voice Recorder (\(audioRecorder.clipsCount))")
+                .appHeadline()
             
             Spacer()
+            
+            HStack(spacing: AppSpacing.small) {
+                Button(action: {
+                    audioRecorder.refreshRecordings()
+                    loadConversations()
+                }) {
+                    Image(systemName: AppIcons.refresh)
+                        .font(.title2)
+                        .foregroundColor(.accent)
+                }
+                .buttonStyle(.plain)
+            }
         }
+        .padding(.horizontal, AppSpacing.medium)
     }
     
     private var recordingControlsCard: some View {
@@ -81,15 +89,13 @@ struct ListenerView: View {
                     
                     HStack(spacing: 8) {
                         Text("1s")
-                            .font(.caption2)
-                            .foregroundColor(.secondaryText)
+                            .appCaption()
                         
                         Slider(value: $audioRecorder.silenceThreshold, in: 1...60, step: 1.0)
                             .frame(width: 80)
                         
                         Text("60s")
-                            .font(.caption2)
-                            .foregroundColor(.secondaryText)
+                            .appCaption()
                     }
                 }
             }
@@ -107,8 +113,7 @@ struct ListenerView: View {
                         .font(.title2)
                     
                     Text(audioRecorder.isListening ? "Stop Recording" : "Start Recording")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                        .appSubtitle()
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
@@ -138,8 +143,13 @@ struct ListenerView: View {
                     .cornerRadius(12)
             }
         }
-        .padding(16)
-        .background(Color.materialHeavy, in: RoundedRectangle(cornerRadius: 16))
+        .padding()
+        .background(Color.lightGrayBackground)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.cardBorder, lineWidth: 1)
+        )
     }
     
     private var statsCard: some View {
@@ -165,20 +175,24 @@ struct ListenerView: View {
             )
             .frame(maxWidth: .infinity)
         }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 20)
-        .background(Color.materialMedium, in: RoundedRectangle(cornerRadius: 16))
+        .padding()
+        .background(Color.lightGrayBackground)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.cardBorder, lineWidth: 1)
+        )
     }
     
     private var recordingsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            AppSectionHeader(
-                title: "Recordings",
-                actionIcon: AppIcons.refresh
-            ) {
-                    audioRecorder.refreshRecordings()
-                    loadConversations()
+            HStack {
+                Text("Recordings")
+                    .appHeadline()
+                
+                Spacer()
             }
+            .padding(.horizontal, AppSpacing.medium)
             
             if audioRecorder.savedRecordings.isEmpty {
                 AppEmptyState(
@@ -326,8 +340,7 @@ struct RecordingRow: View {
                 // File info
                 VStack(alignment: .leading, spacing: 4) {
                     Text(fileName)
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
+                        .appHeadline()
                         .lineLimit(1)
                     
                     HStack(spacing: 12) {
@@ -336,7 +349,7 @@ struct RecordingRow: View {
                                 Image(systemName: "clock")
                                     .font(.caption2)
                                 Text(timeString)
-                                    .font(.caption)
+                                    .appCaption()
                             }
                             .foregroundColor(.secondary)
                         }
@@ -346,7 +359,7 @@ struct RecordingRow: View {
                                 Image(systemName: "doc")
                                     .font(.caption2)
                                 Text(fileSizeString)
-                                    .font(.caption)
+                                    .appCaption()
                             }
                             .foregroundColor(.secondary)
                         }
@@ -359,33 +372,27 @@ struct RecordingRow: View {
                     Button(action: isPlaying ? onStop : onPlay) {
                         Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
                             .font(.title2)
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(Color.accent)
-                            .cornerRadius(8)
+                            .foregroundColor(.accent)
                     }
+                    .buttonStyle(.plain)
                     
                     // Upload/View Conversation button
                     if isUploaded {
                         Button(action: onViewConversation) {
                             Image(systemName: "doc.text")
                                 .font(.title2)
-                                .foregroundColor(.white)
-                                .frame(width: 36, height: 36)
-                                .background(Color.accent)
-                                .cornerRadius(8)
+                                .foregroundColor(.success)
                         }
+                        .buttonStyle(.plain)
                     } else {
                         Button(action: onUpload) {
                             Image(systemName: isUploading ? "arrow.clockwise" : "icloud.and.arrow.up")
                                 .font(.title2)
-                                .foregroundColor(.white)
-                                .frame(width: 36, height: 36)
-                                .background(isUploading ? Color.mediumGrayBackground : Color.accent)
-                                .cornerRadius(8)
+                                .foregroundColor(isUploading ? .secondaryText : .accent)
                                 .rotationEffect(.degrees(isUploading ? 360 : 0))
                                 .animation(isUploading ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: isUploading)
                         }
+                        .buttonStyle(.plain)
                         .disabled(isUploading)
                     }
                     
@@ -393,29 +400,26 @@ struct RecordingRow: View {
                     Button(action: onShare) {
                         Image(systemName: "square.and.arrow.up")
                             .font(.title2)
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(Color.accent)
-                            .cornerRadius(8)
+                            .foregroundColor(.accent)
                     }
+                    .buttonStyle(.plain)
                     
                     // Delete button
                     Button(action: onDelete) {
                         Image(systemName: "trash")
                             .font(.title2)
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(Color.destructive)
-                            .cornerRadius(8)
+                            .foregroundColor(.destructive)
                     }
+                    .buttonStyle(.plain)
                 }
             }
         }
         .padding()
-        .background(Color.materialMedium, in: RoundedRectangle(cornerRadius: 12))
+        .background(Color.lightGrayBackground)
+        .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(isUploaded ? Color.success.opacity(0.3) : Color.primary.opacity(0.1), lineWidth: 1)
+                .stroke(isUploaded ? Color.success.opacity(0.3) : Color.cardBorder, lineWidth: 1)
         )
     }
 }
@@ -434,13 +438,10 @@ struct ListenerStatItem: View {
                 .foregroundColor(.accent)
             
             Text(value)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundColor(.primary)
+                .appHeadline()
             
             Text(title)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .appCaption()
         }
     }
 }
