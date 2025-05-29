@@ -8,16 +8,41 @@ struct ConversationsListView: View {
     let onRefreshRequested: (() -> Void)?
     
     @State private var isRefreshing = false
+    @State private var showingUploadView = false
     
     var body: some View {
         NavigationStack {
             AppScrollContainer(spacing: 20) {
-                // Header
-                AppSectionHeader(
-                    title: "Conversations (\(conversations.count))",
-                    actionIcon: AppIcons.refresh,
-                    action: isRefreshing ? nil : refreshConversations
-                )
+                // Header with Upload and Refresh buttons
+                HStack {
+                    Text("Conversations (\(conversations.count))")
+                        .appHeadline()
+                    
+                    Spacer()
+                    
+                    HStack(spacing: AppSpacing.small) {
+                        // Upload button
+                        Button(action: {
+                            showingUploadView = true
+                        }) {
+                            Image(systemName: AppIcons.tabUpload)
+                                .font(.title2)
+                                .foregroundColor(.accent)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // Refresh button
+                        if let refreshAction = (isRefreshing ? nil : refreshConversations) {
+                            Button(action: refreshAction) {
+                                Image(systemName: AppIcons.refresh)
+                                    .font(.title2)
+                                    .foregroundColor(.accent)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+                .padding(.horizontal, AppSpacing.medium)
                 
                 // Conversations List
                 if conversations.isEmpty {
@@ -37,6 +62,24 @@ struct ConversationsListView: View {
                 
                 if isRefreshing {
                     AppLoadingState(message: "Loading...")
+                }
+            }
+            .sheet(isPresented: $showingUploadView) {
+                NavigationView {
+                    UploadView(speakerIDService: speakerIDService)
+                        .navigationTitle("Upload Audio")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .navigationBarTrailing) {
+                                Button("Done") {
+                                    showingUploadView = false
+                                }
+                            }
+                        }
+                }
+                .onDisappear {
+                    // Refresh conversations when upload view is dismissed
+                    onRefreshRequested?()
                 }
             }
             .navigationTitle("Conversations")
@@ -90,8 +133,7 @@ struct ConversationCard: View {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(conversation.display_name ?? "Untitled Conversation")
-                        .font(.headline)
-                        .foregroundColor(.primary)
+                        .appHeadline()
                         .lineLimit(1)
                     
                     HStack(spacing: 16) {
@@ -99,21 +141,21 @@ struct ConversationCard: View {
                             Image(systemName: "clock")
                                 .font(.caption)
                             Text(formattedDuration)
-                                .font(.caption)
+                                .appCaption()
                         }
                         
                         HStack(spacing: 4) {
                             Image(systemName: "person.2")
                                 .font(.caption)
                             Text("\(conversation.speaker_count ?? 0)")
-                                .font(.caption)
+                                .appCaption()
                         }
                         
                         HStack(spacing: 4) {
                             Image(systemName: "text.bubble")
                                 .font(.caption)
                             Text("\(conversation.utterance_count ?? 0)")
-                                .font(.caption)
+                                .appCaption()
                         }
                     }
                     .foregroundColor(.secondary)
@@ -124,34 +166,34 @@ struct ConversationCard: View {
                 VStack(alignment: .trailing, spacing: 4) {
                     if (conversation.utterance_count ?? 0) > 0 {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundColor(.success)
                             .font(.title2)
                         Text("Processed")
-                            .font(.caption2)
-                            .foregroundColor(.green)
+                            .appCaption()
+                            .foregroundColor(.success)
                     } else {
                         Image(systemName: "clock.fill")
-                            .foregroundColor(.orange)
+                            .foregroundColor(.warning)
                             .font(.title2)
                         Text("Processing")
-                            .font(.caption2)
-                            .foregroundColor(.orange)
+                            .appCaption()
+                            .foregroundColor(.warning)
                     }
                 }
             }
             
             if let date = createdDate {
                 Text(DateUtilities.formatConversationDate(date))
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
+                    .appCaption()
+                    .foregroundColor(.secondaryText)
             }
         }
         .padding()
-        .background(Color.gray.opacity(0.05))
+        .background(Color.lightGrayBackground)
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                .stroke(Color.cardBorder, lineWidth: 1)
         )
     }
 }

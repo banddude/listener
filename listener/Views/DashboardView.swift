@@ -21,7 +21,7 @@ struct DashboardView: View {
             // Responsive Tab Navigation
             GeometryReader { geometry in
                 HStack(spacing: 0) {
-                    let tabWidth = (geometry.size.width - AppSpacing.medium) / 5 // 8pt margin on each side
+                    let tabWidth = (geometry.size.width - AppSpacing.medium) / 4 // 8pt margin on each side
                     
                     AppTabButton(
                         title: "Recorder",
@@ -43,13 +43,6 @@ struct DashboardView: View {
                         isSelected: navigationManager.selectedTab == .speakers,
                         width: tabWidth
                     ) { navigationManager.selectedTab = .speakers }
-                    
-                    AppTabButton(
-                        title: "Upload",
-                        iconName: AppIcons.tabUpload,
-                        isSelected: navigationManager.selectedTab == .upload,
-                        width: tabWidth
-                    ) { navigationManager.selectedTab = .upload }
                     
                     AppTabButton(
                         title: "Pinecone",
@@ -81,8 +74,6 @@ struct DashboardView: View {
                         }
                     case .speakers:
                         SpeakersListView(speakerIDService: speakerIDService)
-                    case .upload:
-                        UploadView(speakerIDService: speakerIDService)
                     case .pinecone:
                         PineconeManagerView()
                     }
