@@ -22,11 +22,13 @@ struct listenerApp: App {
                         Text("Record")
                     }
                 
-                DashboardView()
-                    .tabItem {
-                        Image(systemName: "list.bullet")
-                        Text("Dashboard")
-                    }
+                NavigationView {
+                    DashboardView()
+                }
+                .tabItem {
+                    Image(systemName: "list.bullet")
+                    Text("Dashboard")
+                }
             }
             #endif
         }
@@ -549,7 +551,13 @@ struct MacConversationsView: View {
                     Spacer()
                 }
             } else {
-                ConversationsListView(conversations: conversations, speakerIDService: speakerIDService)
+                ConversationsListView(
+                    conversations: conversations, 
+                    speakerIDService: speakerIDService,
+                    onRefreshRequested: {
+                        loadConversations()
+                    }
+                )
             }
             
             if !errorMessage.isEmpty {
@@ -586,9 +594,6 @@ struct MacConversationsView: View {
 
 struct MacSpeakersView: View {
     @ObservedObject var speakerIDService: SpeakerIDService
-    @State private var speakers: [Speaker] = []
-    @State private var isLoading = false
-    @State private var errorMessage = ""
     
     var body: some View {
         VStack(spacing: 0) {
@@ -599,7 +604,7 @@ struct MacSpeakersView: View {
                     .fontWeight(.semibold)
                 Spacer()
                 Button("Refresh") {
-                    loadSpeakers()
+                    speakerIDService.loadSpeakers()
                 }
             }
             .padding()
@@ -607,46 +612,7 @@ struct MacSpeakersView: View {
             Divider()
             
             // Content
-            if isLoading {
-                VStack {
-                    Spacer()
-                    ProgressView()
-                    Text("Loading speakers...")
-                        .foregroundColor(.secondary)
-                    Spacer()
-                }
-            } else {
-                SpeakersListView(speakers: speakers, speakerIDService: speakerIDService)
-            }
-            
-            if !errorMessage.isEmpty {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-                    .padding()
-            }
-        }
-        .onAppear {
-            loadSpeakers()
-        }
-    }
-    
-    private func loadSpeakers() {
-        isLoading = true
-        errorMessage = ""
-        
-        Task {
-            do {
-                let loadedSpeakers = try await speakerIDService.getSpeakers()
-                await MainActor.run {
-                    self.speakers = loadedSpeakers
-                    self.isLoading = false
-                }
-            } catch {
-                await MainActor.run {
-                    self.errorMessage = "Failed to load speakers: \(error.localizedDescription)"
-                    self.isLoading = false
-                }
-            }
+            SpeakersListView(speakerIDService: speakerIDService)
         }
     }
 }
@@ -691,7 +657,7 @@ struct MacPineconeView: View {
             Divider()
             
             // Content
-            PineconeManagerView(speakerIDService: speakerIDService)
+            PineconeManagerView()
                 .padding()
         }
     }
