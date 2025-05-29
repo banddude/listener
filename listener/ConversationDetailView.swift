@@ -15,13 +15,8 @@ struct ConversationDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             if isLoading {
-                VStack(spacing: 16) {
-                    ProgressView()
-                        .scaleEffect(1.2)
-                    Text("Loading conversation...")
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                AppLoadingState(message: "Loading conversation...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if let summary = conversationSummary, let detail = conversationDetail {
                 ConversationDetailContent(
                     conversationId: conversationId,
@@ -36,19 +31,11 @@ struct ConversationDetailView: View {
             } else {
                 // Error state
                 VStack(spacing: 16) {
-                    Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 48))
-                        .foregroundColor(.orange)
-                    
-                    Text("Failed to load conversation")
-                        .font(.headline)
-                    
-                    if !errorMessage.isEmpty {
-                        Text(errorMessage)
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
+                    AppEmptyState(
+                        icon: AppIcons.error,
+                        title: "Failed to load conversation",
+                        subtitle: errorMessage.isEmpty ? "Please try again" : errorMessage
+                    )
                     
                     Button("Retry") {
                         Task { await loadFullConversationData() }

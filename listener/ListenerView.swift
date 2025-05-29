@@ -36,7 +36,7 @@ struct ListenerView: View {
                 // Recordings List
                 recordingsSection
             }
-            .padding()
+            .padding(16)
         }
         .background(Color(.systemGroupedBackground))
         .onAppear {
@@ -51,14 +51,12 @@ struct ListenerView: View {
     
     private var headerSection: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: AppSpacing.extraSmall) {
                 Text("Voice Recorder")
-                    .font(.title2)
-                    .fontWeight(.bold)
+                    .appTitle()
                 
                 Text("Record and process conversations")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .appSubtitle()
             }
             
             Spacer()
@@ -66,54 +64,36 @@ struct ListenerView: View {
     }
     
     private var recordingControlsCard: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: AppSpacing.medium) {
             // Status indicator
             HStack {
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(audioRecorder.isListening ? .green : .red)
-                        .frame(width: 12, height: 12)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(audioRecorder.isListening ? "Listening" : "Ready to Record")
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
-                        
-                        if audioRecorder.isSpeechDetected {
-                            Text("Speech Detected")
-                                .font(.caption)
-                                .foregroundColor(.blue)
-                        } else if audioRecorder.isRecordingClip {
-                            Text("Recording - \(String(format: "%.1f", audioRecorder.currentClipDuration))s")
-                                .font(.caption)
-                                .foregroundColor(.red)
-                        } else {
-                            Text(audioRecorder.isListening ? "Waiting for speech..." : "Tap Start to begin")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
+                AppStatusIndicator(
+                    isActive: audioRecorder.isListening,
+                    activeText: "Listening",
+                    inactiveText: "Ready to Record",
+                    detailText: audioRecorder.isSpeechDetected ? "Speech Detected" : 
+                               audioRecorder.isRecordingClip ? "Recording - \(String(format: "%.1f", audioRecorder.currentClipDuration))s" : 
+                               audioRecorder.isListening ? "Waiting for speech..." : "Tap Start to begin"
+                )
                 
                 Spacer()
                 
                 // Silence threshold control
-                VStack(alignment: .trailing, spacing: 4) {
+                VStack(alignment: .trailing, spacing: AppSpacing.extraSmall) {
                     Text("Silence: \(Int(audioRecorder.silenceThreshold))s")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .appCaption()
                     
-                    HStack(spacing: 8) {
+                    HStack(spacing: AppSpacing.small) {
                         Text("1s")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.secondaryText)
                         
                         Slider(value: $audioRecorder.silenceThreshold, in: 1...60, step: 1.0)
                             .frame(width: 80)
                         
                         Text("60s")
                             .font(.caption2)
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.secondaryText)
                     }
                 }
             }
@@ -126,8 +106,8 @@ struct ListenerView: View {
                     audioRecorder.startListening()
                 }
             }) {
-                HStack(spacing: 8) {
-                    Image(systemName: audioRecorder.isListening ? "stop.circle.fill" : "record.circle")
+                HStack(spacing: AppSpacing.small) {
+                    Image(systemName: audioRecorder.isListening ? "stop.circle.fill" : AppIcons.record)
                         .font(.title2)
                     
                     Text(audioRecorder.isListening ? "Stop Recording" : "Start Recording")
@@ -136,74 +116,69 @@ struct ListenerView: View {
                 }
                 .foregroundColor(.white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(audioRecorder.isListening ? Color.red : Color.green)
-                .cornerRadius(12)
+                .padding(.vertical, AppSpacing.mediumSmall)
+                .background(audioRecorder.isListening ? Color.recordingInactive : Color.recordingActive)
+                .cornerRadius(AppTheme.cornerRadius)
             }
             
             // Status messages
-            if !audioRecorder.statusMessage.isEmpty || !audioRecorder.errorMessage.isEmpty {
-                VStack(spacing: 6) {
-                    if !audioRecorder.statusMessage.isEmpty {
-                        Text(audioRecorder.statusMessage)
-                            .font(.caption)
-                            .foregroundColor(.blue)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.blue.opacity(0.1))
-                            .cornerRadius(8)
-                    }
-                    
-                    if !audioRecorder.errorMessage.isEmpty {
-                        Text(audioRecorder.errorMessage)
-                            .font(.caption)
-                            .foregroundColor(.red)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.red.opacity(0.1))
-                            .cornerRadius(8)
-                    }
-                }
+            if !audioRecorder.statusMessage.isEmpty {
+                Text(audioRecorder.statusMessage)
+                    .appCaption()
+                    .foregroundColor(.speechDetected)
+                    .padding(.horizontal, AppSpacing.mediumSmall)
+                    .padding(.vertical, AppSpacing.small)
+                    .background(Color.accentLight)
+                    .cornerRadius(AppTheme.cornerRadius)
+            }
+            
+            if !audioRecorder.errorMessage.isEmpty {
+                Text(audioRecorder.errorMessage)
+                    .appCaption()
+                    .foregroundColor(.destructive)
+                    .padding(.horizontal, AppSpacing.mediumSmall)
+                    .padding(.vertical, AppSpacing.small)
+                    .background(Color.destructiveLight)
+                    .cornerRadius(AppTheme.cornerRadius)
             }
         }
-        .padding()
-        .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .padding(AppSpacing.medium)
+        .background(.thickMaterial, in: RoundedRectangle(cornerRadius: AppTheme.cornerRadius))
     }
     
     private var statsCard: some View {
         HStack(spacing: 0) {
             ListenerStatItem(
-                icon: "waveform",
+                icon: AppIcons.recording,
                 title: "Recordings",
                 value: "\(audioRecorder.clipsCount)"
             )
             .frame(maxWidth: .infinity)
             
             ListenerStatItem(
-                icon: "icloud.and.arrow.up",
+                icon: AppIcons.upload,
                 title: "Uploaded",
                 value: "\(uploadedRecordings.count)"
             )
             .frame(maxWidth: .infinity)
             
             ListenerStatItem(
-                icon: "checkmark.circle",
+                icon: AppIcons.checkmark,
                 title: "Processed",
                 value: "\(conversations.count)"
             )
             .frame(maxWidth: .infinity)
         }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 20)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.vertical, AppSpacing.medium)
+        .padding(.horizontal, AppSpacing.mediumLarge)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: AppTheme.cornerRadius))
     }
     
     private var recordingsSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: AppSpacing.listItemSpacing) {
             HStack {
                 Text("Recordings")
-                    .font(.headline)
-                    .fontWeight(.semibold)
+                    .appHeadline()
                 
                 Spacer()
                 
@@ -211,31 +186,20 @@ struct ListenerView: View {
                     audioRecorder.refreshRecordings()
                     loadConversations()
                 }) {
-                    Image(systemName: "arrow.clockwise")
+                    Image(systemName: AppIcons.refresh)
                         .font(.subheadline)
-                        .foregroundColor(.blue)
+                        .foregroundColor(.accent)
                 }
             }
             
             if audioRecorder.savedRecordings.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: "waveform.slash")
-                        .font(.system(size: 48))
-                        .foregroundColor(.secondary)
-                    
-                    Text("No recordings yet")
-                        .font(.headline)
-                        .foregroundColor(.primary)
-                    
-                    Text("Tap 'Start Recording' to begin capturing conversations")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 40)
+                AppEmptyState(
+                    icon: AppIcons.noRecordings,
+                    title: "No recordings yet",
+                    subtitle: "Tap 'Start Recording' to begin capturing conversations"
+                )
             } else {
-                LazyVStack(alignment: .leading, spacing: 8) {
+                LazyVStack(alignment: .leading, spacing: AppSpacing.small) {
                     ForEach(audioRecorder.savedRecordings, id: \.lastPathComponent) { recording in
                         RecordingRow(
                             recording: recording,

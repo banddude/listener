@@ -12,45 +12,34 @@ struct SpeakersListView: View {
     
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+            VStack(alignment: .leading, spacing: AppSpacing.mediumLarge) {
                 // Header
                 HStack {
                     Text("Speakers (\(speakers.count))")
-                        .font(.headline)
+                        .appHeadline()
                     
                     Spacer()
                     
                     Button(action: {
                         showingAddSpeaker = true
                     }) {
-                        Image(systemName: "plus")
-                            .foregroundColor(.green)
+                        Image(systemName: AppIcons.add)
+                            .foregroundColor(.success)
                             .font(.title2)
                     }
                     .buttonStyle(.plain)
                 }
-                .padding(.horizontal)
+                .padding(.horizontal, AppSpacing.medium)
                 
                 // Speakers List
                 if speakers.isEmpty && !isRefreshing {
-                    VStack(spacing: 16) {
-                        Image(systemName: "person.2")
-                            .font(.system(size: 48))
-                            .foregroundColor(.gray)
-                        
-                        Text("No speakers found")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        
-                        Text("Speakers will appear here after processing conversations")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                    AppEmptyState(
+                        icon: AppIcons.noSpeakers,
+                        title: "No speakers found",
+                        subtitle: "Speakers will appear here after processing conversations"
+                    )
                 } else {
-                    LazyVStack(spacing: 12) {
+                    LazyVStack(spacing: AppSpacing.listItemSpacing) {
                         ForEach(speakers, id: \.id) { speaker in
                             SpeakerCard(
                                 speaker: speaker,
@@ -61,18 +50,11 @@ struct SpeakersListView: View {
                             )
                         }
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, AppSpacing.medium)
                 }
                 
                 if isRefreshing {
-                    HStack {
-                        ProgressView()
-                            .scaleEffect(0.8)
-                        Text("Loading speakers...")
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
+                    AppLoadingState(message: "Loading speakers...")
                 }
             }
         }

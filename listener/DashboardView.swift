@@ -13,70 +13,65 @@ struct DashboardView: View {
             // Simple Header
             HStack {
                 Text("Dashboard")
-                    .font(.title2)
-                    .fontWeight(.semibold)
+                    .appTitle()
                 Spacer()
             }
-            .padding()
+            .padding(AppSpacing.medium)
             
             // Responsive Tab Navigation
             GeometryReader { geometry in
                 HStack(spacing: 0) {
-                    let tabWidth = (geometry.size.width - 16) / 5 // 8pt margin on each side
+                    let tabWidth = (geometry.size.width - AppSpacing.medium) / 5 // 8pt margin on each side
                     
-                    ResponsiveTabButton(
+                    AppTabButton(
                         title: "Recorder",
-                        icon: "record.circle",
+                        iconName: AppIcons.tabRecorder,
                         isSelected: navigationManager.selectedTab == .recorder,
                         width: tabWidth,
                         action: { navigationManager.selectedTab = .recorder }
                     )
                     
-                    ResponsiveTabButton(
+                    AppTabButton(
                         title: "Conversations",
-                        icon: "bubble.left.and.bubble.right",
+                        iconName: AppIcons.tabConversations,
                         isSelected: navigationManager.selectedTab == .conversations,
                         width: tabWidth,
                         action: { navigationManager.selectedTab = .conversations }
                     )
                     
-                    ResponsiveTabButton(
+                    AppTabButton(
                         title: "Speakers",
-                        icon: "person.2",
+                        iconName: AppIcons.tabSpeakers,
                         isSelected: navigationManager.selectedTab == .speakers,
                         width: tabWidth,
                         action: { navigationManager.selectedTab = .speakers }
                     )
                     
-                    ResponsiveTabButton(
+                    AppTabButton(
                         title: "Upload",
-                        icon: "icloud.and.arrow.up",
+                        iconName: AppIcons.tabUpload,
                         isSelected: navigationManager.selectedTab == .upload,
                         width: tabWidth,
                         action: { navigationManager.selectedTab = .upload }
                     )
                     
-                    ResponsiveTabButton(
+                    AppTabButton(
                         title: "Pinecone",
-                        icon: "magnifyingglass",
+                        iconName: AppIcons.tabPinecone,
                         isSelected: navigationManager.selectedTab == .pinecone,
                         width: tabWidth,
                         action: { navigationManager.selectedTab = .pinecone }
                     )
                 }
-                .padding(.horizontal, 8)
+                .padding(.horizontal, AppSpacing.small)
             }
-            .frame(height: 60)
-            .padding(.bottom, 8)
+            .frame(height: AppSpacing.tabBarHeight)
+            .padding(.bottom, AppSpacing.small)
             
             // Content Area
             if isLoading {
-                VStack {
-                    ProgressView()
-                    Text("Loading...")
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                AppLoadingState(message: "Loading...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Group {
                     switch navigationManager.selectedTab {
@@ -103,12 +98,7 @@ struct DashboardView: View {
             
             // Error Message
             if !errorMessage.isEmpty {
-                Text(errorMessage)
-                    .foregroundColor(.red)
-                    .padding()
-                    .background(Color.red.opacity(0.1))
-                    .cornerRadius(8)
-                    .padding()
+                AppErrorMessage(message: errorMessage)
             }
         }
         .onAppear {
@@ -140,44 +130,6 @@ struct DashboardView: View {
     }
 }
 
-struct ResponsiveTabButton: View {
-    let title: String
-    let icon: String
-    let isSelected: Bool
-    let width: CGFloat
-    let action: () -> Void
-    
-    private var fontSize: Font {
-        // Adjust font size based on available width and text length
-        if width < 70 || title.count > 8 {
-            return .caption2
-        } else if width < 80 {
-            return .caption
-        } else {
-            return .footnote
-        }
-    }
-    
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 3) {
-                Image(systemName: icon)
-                    .font(.system(size: width < 70 ? 12 : 14))
-                Text(title)
-                    .font(fontSize)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-            }
-            .foregroundColor(isSelected ? .blue : .gray)
-            .frame(width: width, height: 50)
-            .background(
-                isSelected ? Color.blue.opacity(0.1) : Color.clear
-            )
-            .cornerRadius(8)
-        }
-        .buttonStyle(.plain)
-    }
-}
 
 #Preview {
     DashboardView()
