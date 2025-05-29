@@ -1683,8 +1683,8 @@ struct PineconeTrainSpeakerView: View {
                 )
                 print("✅ Successfully toggled utterance \(utteranceId) to \(include)")
                 
-                await MainActor.run {
-                    _ = self.processingUtterances.remove(utteranceId)
+                _ = await MainActor.run {
+                    self.processingUtterances.remove(utteranceId)
                 }
             } catch {
                 // Revert local state on error
