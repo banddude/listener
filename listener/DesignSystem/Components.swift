@@ -243,6 +243,55 @@ struct AppStatusIndicator: View {
     }
 }
 
+// MARK: - Speaker Avatar Component
+
+struct AppSpeakerAvatar: View {
+    let speakerName: String?
+    let size: CGFloat
+    
+    init(speakerName: String?, size: CGFloat = 40) {
+        self.speakerName = speakerName
+        self.size = size
+    }
+    
+    var body: some View {
+        Circle()
+            .fill(avatarBackgroundColor)
+            .frame(width: size, height: size)
+            .overlay(
+                Text(avatarInitials)
+                    .font(.system(size: size * 0.4, weight: .semibold))
+                    .foregroundColor(.white)
+            )
+    }
+    
+    private var avatarInitials: String {
+        guard let name = speakerName, !name.isEmpty else {
+            return "?"
+        }
+        
+        let components = name.split(separator: " ")
+        if components.count >= 2 {
+            let firstInitial = String(components[0].first ?? "?")
+            let lastInitial = String(components[1].first ?? "?")
+            return (firstInitial + lastInitial).uppercased()
+        } else {
+            return String(name.prefix(2)).uppercased()
+        }
+    }
+    
+    private var avatarBackgroundColor: Color {
+        guard let name = speakerName else {
+            return .gray
+        }
+        
+        // Generate consistent color based on name hash
+        let hash = name.hashValue
+        let colors: [Color] = [.blue, .green, .orange, .purple, .red, .pink, .indigo, .teal]
+        return colors[abs(hash) % colors.count]
+    }
+}
+
 // MARK: - Error Message Component
 
 struct AppErrorMessage: View {
@@ -305,7 +354,7 @@ struct ComponentsPreview: View {
                     iconName: AppIcons.tabRecorder,
                     isSelected: isSelected,
                     width: 80
-                )                    { isSelected.toggle() }
+                ) { isSelected.toggle() }
 
                 // Card
                 StandardCard {

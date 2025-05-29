@@ -12,7 +12,7 @@ class SpeakerIDService: ObservableObject {
     @Published var isUploading = false
     @Published var errorMessage = ""
     
-    private let baseURL = "https://speaker-id-server-production.up.railway.app"
+    private let baseURL = AppConstants.baseURL
     
     // MARK: - Conversation Management
     

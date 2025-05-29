@@ -95,10 +95,10 @@ struct PineconeManagerView: View {
             print("🟡 PineconeManagerView: Sheet presenting with speakerName: '\(item.speakerName)'")
             return PineconeAddEmbeddingView(
                 speakerName: item.speakerName
-            )                {
+            ) {
                     addEmbeddingItem = nil
                     refreshSpeakers()
-                }
+            }
         }
         .onAppear {
             refreshSpeakers()
@@ -111,7 +111,7 @@ struct PineconeManagerView: View {
         Task {
             do {
                 // Use the correct Pinecone-specific endpoint
-                let url = URL(string: "https://speaker-id-server-production.up.railway.app/api/pinecone/speakers")!
+                let url = URL(string: "\(AppConstants.baseURL)/api/pinecone/speakers")!
                 print("🔍 Fetching Pinecone speakers from: \(url.absoluteString)")
                 
                 let (data, response) = try await URLSession.shared.data(from: url)
@@ -159,7 +159,7 @@ struct PineconeManagerView: View {
         Task {
             do {
                 // Use the correct Pinecone-specific endpoint
-                let url = URL(string: "https://speaker-id-server-production.up.railway.app/api/pinecone/speakers/\(speakerName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? speakerName)")!
+                let url = URL(string: "\(AppConstants.baseURL)/api/pinecone/speakers/\(speakerName.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? speakerName)")!
                 var request = URLRequest(url: url)
                 request.httpMethod = "DELETE"
                 
@@ -185,7 +185,7 @@ struct PineconeManagerView: View {
         Task {
             do {
                 // Use the correct Pinecone-specific endpoint
-                let url = URL(string: "https://speaker-id-server-production.up.railway.app/api/pinecone/embeddings/\(embeddingId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? embeddingId)")!
+                let url = URL(string: "\(AppConstants.baseURL)/api/pinecone/embeddings/\(embeddingId.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? embeddingId)")!
                 var request = URLRequest(url: url)
                 request.httpMethod = "DELETE"
                 
@@ -403,7 +403,7 @@ struct PineconeAddSpeakerView: View {
         Task {
             do {
                 // Use the correct Pinecone-specific endpoint
-                let url = URL(string: "https://speaker-id-server-production.up.railway.app/api/pinecone/speakers")!
+                let url = URL(string: "\(AppConstants.baseURL)/api/pinecone/speakers")!
                 var request = URLRequest(url: url)
                 request.httpMethod = "POST"
                 
@@ -561,7 +561,7 @@ struct PineconeAddEmbeddingView: View {
         Task {
             do {
                 // Use the correct Pinecone-specific endpoint
-                let url = URL(string: "https://speaker-id-server-production.up.railway.app/api/pinecone/embeddings")!
+                let url = URL(string: "\(AppConstants.baseURL)/api/pinecone/embeddings")!
                 var request = URLRequest(url: url)
                 request.httpMethod = "POST"
                 

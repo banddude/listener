@@ -24,9 +24,9 @@ struct ConversationDetailView: View {
                     initialDetail: detail,
                     speakerIDService: speakerIDService,
                     onConversationUpdated: onConversationUpdated
-                )                    {
+                ) {
                         Task { await loadFullConversationData() }
-                    }
+                }
             } else {
                 // Error state
                 VStack(spacing: 16) {
@@ -116,18 +116,9 @@ struct ConversationDetailContent: View {
     @State private var isLoadingSpeakers = false
     @State private var isRefreshing = false
     
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter
-    }
-    
     private var createdDate: Date? {
-        let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         guard let createdAt = currentSummary.created_at else { return nil }
-        return isoFormatter.date(from: createdAt)
+        return DateUtilities.parseISODate(createdAt)
     }
     
     private var uniqueSpeakers: [String] {
@@ -207,7 +198,7 @@ struct ConversationDetailContent: View {
                     // Date and play button row
                     HStack {
                         if let date = createdDate {
-                            Text(dateFormatter.string(from: date))
+                            Text(DateUtilities.formatConversationDate(date))
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                         }
@@ -255,7 +246,7 @@ struct ConversationDetailContent: View {
                         StatItem(
                             icon: "clock",
                             title: "Duration",
-                            value: formatDuration(currentDetail.duration_seconds ?? currentSummary.duration ?? 0)
+                            value: DurationUtilities.formatDurationCompact(TimeInterval(currentDetail.duration_seconds ?? currentSummary.duration ?? 0))
                         )
                         .frame(maxWidth: .infinity)
                         
@@ -290,17 +281,17 @@ struct ConversationDetailContent: View {
                                 SpeakerFilterButton(
                                     title: "All",
                                     isSelected: selectedSpeaker == nil
-                                )                                    { 
+                                ) { 
                                         selectedSpeaker = nil 
-                                    }
+                                }
                                 
                                 ForEach(uniqueSpeakers, id: \.self) { speaker in
                                     SpeakerFilterButton(
                                         title: speaker,
                                         isSelected: selectedSpeaker == speaker
-                                    )                                        { 
+                                    ) { 
                                             selectedSpeaker = speaker 
-                                        }
+                                    }
                                 }
                             }
                             .padding(.horizontal)
@@ -499,26 +490,12 @@ struct ConversationDetailContent: View {
         audioPlayer = nil
     }
     
-    private func formatDuration(_ seconds: Int) -> String {
-        if seconds < 60 {
-            return "\(seconds)s"
-        } else if seconds < 3_600 {
-            let minutes = seconds / 60
-            let remainingSeconds = seconds % 60
-            return "\(minutes)m \(remainingSeconds)s"
-        } else {
-            let hours = seconds / 3_600
-            let minutes = (seconds % 3_600) / 60
-            return "\(hours)h \(minutes)m"
-        }
-    }
-    
     private func getFullAudioURL(_ urlString: String) -> String {
         if urlString.hasPrefix("http://") || urlString.hasPrefix("https://") {
             return urlString
         }
         
-        let baseURL = "https://speaker-id-server-production.up.railway.app"
+        let baseURL = AppConstants.baseURL
         return baseURL + urlString
     }
     
@@ -646,12 +623,6 @@ struct UtteranceRow: View {
         utterance.utterance_embedding_id
     }
     
-    private var timeFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm:ss"
-        return formatter
-    }
-    
     private var isValidAudioURL: Bool {
         let fullURL = getFullAudioURL(utterance.audio_url)
         guard let url = URL(string: fullURL), 
@@ -667,20 +638,17 @@ struct UtteranceRow: View {
             return urlString
         }
         
-        let baseURL = "https://speaker-id-server-production.up.railway.app"
+        let baseURL = AppConstants.baseURL
         return baseURL + urlString
     }
     
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             // Speaker Avatar
-            Circle()
-                .fill(isPlaying ? Color.blue : Color.blue.opacity(0.2))
-                .frame(width: 36, height: 36)
+            AppSpeakerAvatar(speakerName: utterance.speaker_name, size: 36)
                 .overlay(
-                    Text(String(utterance.speaker_name.prefix(1)).uppercased())
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(isPlaying ? .white : .blue)
+                    Circle()
+                        .stroke(isPlaying ? Color.blue : Color.clear, lineWidth: 2)
                 )
             
             VStack(alignment: .leading, spacing: 8) {
@@ -1070,14 +1038,7 @@ struct SpeakerPickerView: View {
                         } else {
                             List(availableSpeakers, id: \.id) { speaker in
                                 HStack {
-                                    Circle()
-                                        .fill(Color.blue.opacity(0.2))
-                                        .frame(width: 32, height: 32)
-                                        .overlay(
-                                            Text(String(speaker.name.prefix(1)).uppercased())
-                                                .font(.system(size: 12, weight: .semibold))
-                                                .foregroundColor(.blue)
-                                        )
+                                    AppSpeakerAvatar(speakerName: speaker.name, size: 32)
                                     
                                     VStack(alignment: .leading, spacing: 2) {
                                         Text(speaker.name)
