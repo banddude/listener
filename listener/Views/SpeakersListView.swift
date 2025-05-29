@@ -255,13 +255,6 @@ struct SpeakerCard: View {
     let onSpeakerUpdated: () -> Void
     
     @State private var showingDetails = false
-    @State private var showingEditName = false
-    @State private var showingPineconeLink = false
-    @State private var editedName = ""
-    @State private var selectedPineconeSpeekerName = ""
-    @State private var availablePineconeSpeekers: [String] = []
-    @State private var isLinking = false
-    @State private var isLoadingPineconeSpeekers = false
     
     var isLinkedToPinecone: Bool {
         speaker.pinecone_speaker_name != nil
@@ -304,60 +297,9 @@ struct SpeakerCard: View {
                 Spacer()
                 
                 HStack(spacing: AppSpacing.small) {
-                    // Train button (only if speaker has utterances)
-                    if let utteranceCount = speaker.utterance_count, utteranceCount > 0 {
-                        Button(action: {
-                            onTrainSpeaker(speaker.name)
-                        }) {
-                            Image(systemName: "brain")
-                                .font(.title2)
-                                .foregroundColor(.accent)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    
-                    // Pinecone link/unlink button
-                    if isLinking {
-                        ProgressView()
-                            .scaleEffect(0.7)
-                    } else if isLinkedToPinecone {
-                        Button(action: {
-                            unlinkFromPinecone()
-                        }) {
-                            Image(systemName: "link.slash")
-                                .font(.title2)
-                                .foregroundColor(.destructive)
-                        }
-                        .buttonStyle(.plain)
-                    } else {
-                        Button(action: {
-                            loadPineconeSpeekersAndShowPicker()
-                        }) {
-                            Image(systemName: "link")
-                                .font(.title2)
-                                .foregroundColor(.accent)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    
-                    Button(action: {
-                        editedName = speaker.name
-                        showingEditName = true
-                    }) {
-                        Image(systemName: "pencil")
-                            .font(.title2)
-                            .foregroundColor(.accent)
-                    }
-                    .buttonStyle(.plain)
-                    
-                    Button(action: {
-                        showingDetails = true
-                    }) {
-                        Image(systemName: "info.circle")
-                            .font(.title2)
-                            .foregroundColor(.success)
-                    }
-                    .buttonStyle(.plain)
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(.secondaryText)
                 }
             }
         }
@@ -368,11 +310,222 @@ struct SpeakerCard: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.cardBorder, lineWidth: 1)
         )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            showingDetails = true
+        }
         .sheet(isPresented: $showingDetails) {
             SpeakerDetailView(
                 speaker: speaker,
-                speakerIDService: speakerIDService
+                speakerIDService: speakerIDService,
+                onSpeakerUpdated: onSpeakerUpdated,
+                onTrainSpeaker: onTrainSpeaker
             )
+        }
+    }
+}
+
+struct SpeakerDetailView: View {
+    let speaker: Speaker
+    let speakerIDService: SpeakerIDService
+    let onSpeakerUpdated: () -> Void
+    let onTrainSpeaker: (String) -> Void
+    
+    @Environment(\.dismiss) private var dismiss
+    @State private var showingEditName = false
+    @State private var showingPineconeLink = false
+    @State private var editedName = ""
+    @State private var selectedPineconeSpeekerName = ""
+    @State private var availablePineconeSpeekers: [String] = []
+    @State private var isLinking = false
+    @State private var isLoadingPineconeSpeekers = false
+    
+    var isLinkedToPinecone: Bool {
+        speaker.pinecone_speaker_name != nil
+    }
+    
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    // Speaker Info
+                    AppInfoCard {
+                        VStack(spacing: 16) {
+                            AppSpeakerAvatar(speakerName: speaker.name, size: 80)
+                            
+                            Text(speaker.name)
+                                .font(.title)
+                                .fontWeight(.bold)
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    
+                    // Stats
+                    AppInfoCard {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Statistics")
+                                .appHeadline()
+                            
+                            HStack(spacing: 20) {
+                                StatItem(
+                                    icon: "text.bubble",
+                                    title: "Utterances",
+                                    value: "\(speaker.utterance_count ?? 0)"
+                                )
+                                
+                                StatItem(
+                                    icon: "clock",
+                                    title: "Total Duration",
+                                    value: DurationUtilities.formatDurationCompact(TimeInterval(speaker.total_duration ?? 0))
+                                )
+                                
+                                if let utteranceCount = speaker.utterance_count,
+                                   let totalDuration = speaker.total_duration,
+                                   utteranceCount > 0 {
+                                    StatItem(
+                                        icon: "speedometer",
+                                        title: "Avg Duration",
+                                        value: DurationUtilities.formatDurationCompact(TimeInterval(totalDuration / utteranceCount))
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Actions
+                    AppInfoCard {
+                        VStack(alignment: .leading, spacing: 16) {
+                            Text("Actions")
+                                .appHeadline()
+                            
+                            // Edit Name
+                            Button(action: {
+                                editedName = speaker.name
+                                showingEditName = true
+                            }) {
+                                HStack {
+                                    Image(systemName: "pencil")
+                                        .foregroundColor(.accent)
+                                    Text("Edit Name")
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption)
+                                        .foregroundColor(.secondaryText)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            
+                            Divider()
+                            
+                            // Pinecone Link/Unlink
+                            if isLinking {
+                                HStack {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                    Text("Updating Pinecone link...")
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                }
+                            } else if isLinkedToPinecone {
+                                Button(action: {
+                                    unlinkFromPinecone()
+                                }) {
+                                    HStack {
+                                        Image(systemName: "link.slash")
+                                            .foregroundColor(.destructive)
+                                        VStack(alignment: .leading) {
+                                            Text("Unlink from Pinecone")
+                                                .foregroundColor(.primary)
+                                            if let pineconeSpeekerName = speaker.pinecone_speaker_name {
+                                                Text("Linked to: \(pineconeSpeekerName)")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption)
+                                            .foregroundColor(.secondaryText)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                Button(action: {
+                                    loadPineconeSpeekersAndShowPicker()
+                                }) {
+                                    HStack {
+                                        Image(systemName: "link")
+                                            .foregroundColor(.accent)
+                                        Text("Link to Pinecone")
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption)
+                                            .foregroundColor(.secondaryText)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            
+                            Divider()
+                            
+                            // Train Button
+                            if let utteranceCount = speaker.utterance_count, utteranceCount > 0 {
+                                Button(action: {
+                                    onTrainSpeaker(speaker.name)
+                                    dismiss()
+                                }) {
+                                    HStack {
+                                        Image(systemName: "brain")
+                                            .foregroundColor(.accent)
+                                        Text("Train Voice Recognition")
+                                            .foregroundColor(.primary)
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption)
+                                            .foregroundColor(.secondaryText)
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                            } else {
+                                HStack {
+                                    Image(systemName: "brain")
+                                        .foregroundColor(.secondary)
+                                    Text("Train Voice Recognition")
+                                        .foregroundColor(.secondary)
+                                    Spacer()
+                                    Text("No utterances")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer()
+                }
+                .padding()
+            }
+            .navigationTitle("Speaker Details")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+            }
+            #else
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Close") {
+                        dismiss()
+                    }
+                }
+            }
+            #endif
         }
         .alert("Edit Speaker Name", isPresented: $showingEditName) {
             TextField("Speaker Name", text: $editedName)
@@ -487,87 +640,6 @@ struct SpeakerCard: View {
                     // Picker is already showing, user can use manual entry
                 }
             }
-        }
-    }
-}
-
-struct SpeakerDetailView: View {
-    let speaker: Speaker
-    let speakerIDService: SpeakerIDService
-    
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    // Speaker Info
-                    AppInfoCard {
-                        VStack(spacing: 16) {
-                            AppSpeakerAvatar(speakerName: speaker.name, size: 80)
-                            
-                            Text(speaker.name)
-                                .font(.title)
-                                .fontWeight(.bold)
-                        }
-                        .frame(maxWidth: .infinity)
-                    }
-                    
-                    // Stats
-                    AppInfoCard {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Statistics")
-                                .appHeadline()
-                            
-                            HStack(spacing: 20) {
-                                StatItem(
-                                    icon: "text.bubble",
-                                    title: "Utterances",
-                                    value: "\(speaker.utterance_count ?? 0)"
-                                )
-                                
-                                StatItem(
-                                    icon: "clock",
-                                    title: "Total Duration",
-                                    value: DurationUtilities.formatDurationCompact(TimeInterval(speaker.total_duration ?? 0))
-                                )
-                                
-                                if let utteranceCount = speaker.utterance_count,
-                                   let totalDuration = speaker.total_duration,
-                                   utteranceCount > 0 {
-                                    StatItem(
-                                        icon: "speedometer",
-                                        title: "Avg Duration",
-                                        value: DurationUtilities.formatDurationCompact(TimeInterval(totalDuration / utteranceCount))
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    
-                    Spacer()
-                }
-                .padding()
-            }
-            .navigationTitle("Speaker Details")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                }
-            }
-            #else
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button("Close") {
-                        dismiss()
-                    }
-                }
-            }
-            #endif
         }
     }
 }
@@ -803,12 +875,9 @@ struct PineconeSpeakerCard: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.cardBorder, lineWidth: 1)
         )
+        .contentShape(Rectangle())
         .onTapGesture {
-            if !speaker.embeddings.isEmpty {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    isExpanded.toggle()
-                }
-            }
+            showingDetails = true
         }
         .confirmationDialog(
             "Delete Speaker",
