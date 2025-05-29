@@ -509,9 +509,14 @@ struct ConversationDetailContent: View {
                     // Update the summary (detail will be updated on next reload)
                     currentSummary.display_name = editedConversationName
                     isEditingConversationName = false
-                    
-                    // Immediately notify the parent to refresh the conversations list
-                    print("🔄 ConversationDetailView: Calling onConversationUpdated callback to refresh parent")
+                }
+                
+                // Add a small delay to allow server cache to update before refreshing
+                try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+                
+                await MainActor.run {
+                    // Notify the parent to refresh the conversations list after delay
+                    print("🔄 ConversationDetailView: Calling onConversationUpdated callback to refresh parent (with delay)")
                     onConversationUpdated?()
                 }
                 
