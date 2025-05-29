@@ -17,7 +17,7 @@ struct SpeakersListView: View {
                 title: "Speakers (\(speakers.count))",
                 actionIcon: AppIcons.add,
                 actionColor: .success
-            )                { showingAddSpeaker = true }
+            ) { showingAddSpeaker = true }
                 
                 // Speakers List
                 if speakers.isEmpty && !isRefreshing {
@@ -32,9 +32,9 @@ struct SpeakersListView: View {
                             SpeakerCard(
                                 speaker: speaker,
                                 speakerIDService: speakerIDService
-                            )                                {
+                            ) {
                                     refreshSpeakers()
-                                }
+                            }
                         }
                     }
                 }
@@ -49,10 +49,10 @@ struct SpeakersListView: View {
         .sheet(isPresented: $showingAddSpeaker) {
             AddSpeakerView(
                 speakerIDService: speakerIDService
-            )                {
+            ) {
                     showingAddSpeaker = false
                     refreshSpeakers()
-                }
+            }
         }
         .onAppear {
             refreshSpeakers()
@@ -104,14 +104,7 @@ struct SpeakerCard: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 // Speaker Avatar
-                Circle()
-                    .fill(Color.blue.opacity(0.2))
-                    .frame(width: 44, height: 44)
-                    .overlay(
-                        Text(String(speaker.name.prefix(1)).uppercased())
-                            .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.blue)
-                    )
+                AppSpeakerAvatar(speakerName: speaker.name, size: 44)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
@@ -139,7 +132,7 @@ struct SpeakerCard: View {
                         }
                         
                         if let totalDuration = speaker.total_duration {
-                            Text(formatDuration(totalDuration))
+                            Text(DurationUtilities.formatDurationCompact(TimeInterval(totalDuration)))
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -232,16 +225,6 @@ struct SpeakerCard: View {
                     showingPineconeLink = false
                 }
             )
-        }
-    }
-    
-    private func formatDuration(_ seconds: Int) -> String {
-        if seconds >= 60 {
-            let minutes = seconds / 60
-            let secs = seconds % 60
-            return "\(minutes)m \(secs)s"
-        } else {
-            return "\(seconds)s"
         }
     }
     
@@ -352,14 +335,7 @@ struct SpeakerDetailView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     // Speaker Info
                     VStack(spacing: 16) {
-                        Circle()
-                            .fill(Color.blue.opacity(0.2))
-                            .frame(width: 80, height: 80)
-                            .overlay(
-                                Text(String(speaker.name.prefix(1)).uppercased())
-                                    .font(.system(size: 32, weight: .bold))
-                                    .foregroundColor(.blue)
-                            )
+                        AppSpeakerAvatar(speakerName: speaker.name, size: 80)
                         
                         Text(speaker.name)
                             .font(.title)
@@ -385,7 +361,7 @@ struct SpeakerDetailView: View {
                             StatItem(
                                 icon: "clock",
                                 title: "Total Duration",
-                                value: formatDuration(speaker.total_duration ?? 0)
+                                value: DurationUtilities.formatDurationCompact(TimeInterval(speaker.total_duration ?? 0))
                             )
                             
                             if let utteranceCount = speaker.utterance_count,
@@ -394,7 +370,7 @@ struct SpeakerDetailView: View {
                                 StatItem(
                                     icon: "speedometer",
                                     title: "Avg Duration",
-                                    value: formatDuration(totalDuration / utteranceCount)
+                                    value: DurationUtilities.formatDurationCompact(TimeInterval(totalDuration / utteranceCount))
                                 )
                             }
                         }
@@ -426,16 +402,6 @@ struct SpeakerDetailView: View {
                 }
             }
             #endif
-        }
-    }
-    
-    private func formatDuration(_ seconds: Int) -> String {
-        if seconds >= 60 {
-            let minutes = seconds / 60
-            let secs = seconds % 60
-            return "\(minutes)m \(secs)s"
-        } else {
-            return "\(seconds)s"
         }
     }
 }
@@ -498,14 +464,7 @@ struct PineconeSpeakerPickerView: View {
                             LazyVStack(spacing: 8) {
                                 ForEach(availableSpeekers, id: \.self) { speakerName in
                                     HStack {
-                                        Circle()
-                                            .fill(Color.green.opacity(0.2))
-                                            .frame(width: 32, height: 32)
-                                            .overlay(
-                                                Text(String(speakerName.prefix(1)).uppercased())
-                                                    .font(.system(size: 12, weight: .semibold))
-                                                    .foregroundColor(.green)
-                                            )
+                                        AppSpeakerAvatar(speakerName: speakerName, size: 32)
                                         
                                         Text(speakerName)
                                             .font(.subheadline)

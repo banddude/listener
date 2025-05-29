@@ -75,33 +75,14 @@ struct ConversationsListView: View {
 struct ConversationCard: View {
     let conversation: BackendConversationSummary
     
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .short
-        return formatter
-    }
-    
     private var createdDate: Date? {
-        let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         guard let createdAt = conversation.created_at else { return nil }
-        return isoFormatter.date(from: createdAt)
+        return DateUtilities.parseISODate(createdAt)
     }
     
     private var formattedDuration: String {
         let duration = conversation.duration ?? 0
-        let hours = duration / 3_600
-        let minutes = (duration % 3_600) / 60
-        let seconds = duration % 60
-        
-        if hours > 0 {
-            return String(format: "%d:%02d:%02d", hours, minutes, seconds)
-        } else if minutes > 0 {
-            return String(format: "%d:%02d", minutes, seconds)
-        } else {
-            return "\(seconds)s"
-        }
+        return DurationUtilities.formatDuration(TimeInterval(duration))
     }
     
     var body: some View {
@@ -160,7 +141,7 @@ struct ConversationCard: View {
             }
             
             if let date = createdDate {
-                Text(dateFormatter.string(from: date))
+                Text(DateUtilities.formatConversationDate(date))
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }

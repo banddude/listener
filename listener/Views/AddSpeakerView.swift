@@ -94,5 +94,5 @@ struct AddSpeakerView: View {
 #Preview {
     AddSpeakerView(
         speakerIDService: SpeakerIDService()
-    )        {}
+    ) {}
 } 

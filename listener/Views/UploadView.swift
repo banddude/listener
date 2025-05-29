@@ -267,9 +267,7 @@ struct UploadView: View {
         do {
             let resources = try url.resourceValues(forKeys: [.fileSizeKey])
             if let fileSize = resources.fileSize {
-                let formatter = ByteCountFormatter()
-                formatter.countStyle = .file
-                return formatter.string(fromByteCount: Int64(fileSize))
+                return DurationUtilities.formatFileSize(Int64(fileSize))
             }
         } catch {
             print("Failed to get file size: \(error)")

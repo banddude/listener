@@ -175,10 +175,10 @@ struct ListenerView: View {
             AppSectionHeader(
                 title: "Recordings",
                 actionIcon: AppIcons.refresh
-            )                {
+            ) {
                     audioRecorder.refreshRecordings()
                     loadConversations()
-                }
+            }
             
             if audioRecorder.savedRecordings.isEmpty {
                 AppEmptyState(
@@ -290,21 +290,15 @@ struct RecordingRow: View {
     }
     
     private var timeString: String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        formatter.dateStyle = .none
-        
         if let creationDate = try? recording.resourceValues(forKeys: [.creationDateKey]).creationDate {
-            return formatter.string(from: creationDate)
+            return DateUtilities.formatTimestamp(creationDate)
         }
         return ""
     }
     
     private var fileSizeString: String {
         if let size = try? recording.resourceValues(forKeys: [.fileSizeKey]).fileSize {
-            let formatter = ByteCountFormatter()
-            formatter.countStyle = .file
-            return formatter.string(fromByteCount: Int64(size))
+            return DurationUtilities.formatFileSize(Int64(size))
         }
         return ""
     }

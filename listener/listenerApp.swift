@@ -545,9 +545,9 @@ struct MacConversationsView: View {
                 ConversationsListView(
                     conversations: conversations, 
                     speakerIDService: speakerIDService
-                )                    {
+                ) {
                         loadConversations()
-                    }
+                }
             }
             
             if !errorMessage.isEmpty {

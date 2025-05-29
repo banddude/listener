@@ -28,35 +28,35 @@ struct DashboardView: View {
                         iconName: AppIcons.tabRecorder,
                         isSelected: navigationManager.selectedTab == .recorder,
                         width: tabWidth
-                    )                        { navigationManager.selectedTab = .recorder }
+                    ) { navigationManager.selectedTab = .recorder }
                     
                     AppTabButton(
                         title: "Conversations",
                         iconName: AppIcons.tabConversations,
                         isSelected: navigationManager.selectedTab == .conversations,
                         width: tabWidth
-                    )                        { navigationManager.selectedTab = .conversations }
+                    ) { navigationManager.selectedTab = .conversations }
                     
                     AppTabButton(
                         title: "Speakers",
                         iconName: AppIcons.tabSpeakers,
                         isSelected: navigationManager.selectedTab == .speakers,
                         width: tabWidth
-                    )                        { navigationManager.selectedTab = .speakers }
+                    ) { navigationManager.selectedTab = .speakers }
                     
                     AppTabButton(
                         title: "Upload",
                         iconName: AppIcons.tabUpload,
                         isSelected: navigationManager.selectedTab == .upload,
                         width: tabWidth
-                    )                        { navigationManager.selectedTab = .upload }
+                    ) { navigationManager.selectedTab = .upload }
                     
                     AppTabButton(
                         title: "Pinecone",
                         iconName: AppIcons.tabPinecone,
                         isSelected: navigationManager.selectedTab == .pinecone,
                         width: tabWidth
-                    )                        { navigationManager.selectedTab = .pinecone }
+                    ) { navigationManager.selectedTab = .pinecone }
                 }
                 .padding(.horizontal, AppSpacing.small)
             }
@@ -76,9 +76,9 @@ struct DashboardView: View {
                         ConversationsListView(
                             conversations: conversations,
                             speakerIDService: speakerIDService
-                        )                            {
+                        ) {
                                 loadData()
-                            }
+                        }
                     case .speakers:
                         SpeakersListView(speakerIDService: speakerIDService)
                     case .upload:
