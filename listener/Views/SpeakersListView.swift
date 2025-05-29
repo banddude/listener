@@ -1,5 +1,6 @@
 import SwiftUI
 import Foundation
+import AVFoundation
 
 struct SpeakersListView: View {
     @State private var speakers: [Speaker] = []
@@ -12,7 +13,6 @@ struct SpeakersListView: View {
     @State private var addEmbeddingItem: AddEmbeddingItem?
     @State private var newSpeakerName = ""
     @State private var errorMessage = ""
-    @State private var selectedSegment = 0
     
     struct AddEmbeddingItem: Identifiable {
         let id = UUID()
@@ -21,90 +21,132 @@ struct SpeakersListView: View {
     
     var body: some View {
         AppScrollContainer(spacing: 20) {
-            // Header with segmented control
-            VStack(spacing: 16) {
-                HStack {
-                    Text("Speaker Management")
-                        .appHeadline()
-                    
-                    Spacer()
-                    
-                    HStack(spacing: AppSpacing.small) {
-                        // Add button (only for conversation speakers)
-                        if selectedSegment == 0 {
-                            Button(action: {
-                                showingAddSpeaker = true
-                            }) {
-                                Image(systemName: AppIcons.add)
-                                    .font(.title2)
-                                    .foregroundColor(.success)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
+            // Header
+            HStack {
+                Text("All Speakers (\(speakers.count + pineconeSpeakers.count))")
+                    .appHeadline()
                 
-                // Segmented control
-                Picker("View Type", selection: $selectedSegment) {
-                    Text("Conversation Speakers (\(speakers.count))").tag(0)
-                    Text("Voice Samples (\(pineconeSpeakers.count))").tag(1)
+                Spacer()
+                
+                HStack(spacing: AppSpacing.small) {
+                    // Refresh button
+                    Button(action: {
+                        refreshAllData()
+                    }) {
+                        Image(systemName: AppIcons.refresh)
+                            .font(.title2)
+                            .foregroundColor(.accent)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isRefreshing || isPineconeLoading)
+                    
+                    // Add speaker button
+                    Button(action: {
+                        showingAddSpeaker = true
+                    }) {
+                        Image(systemName: AppIcons.add)
+                            .font(.title2)
+                            .foregroundColor(.success)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .pickerStyle(SegmentedPickerStyle())
             }
             .padding(.horizontal, AppSpacing.medium)
                 
-            // Content based on selected segment
-            if selectedSegment == 0 {
-                // Conversation Speakers
-                if speakers.isEmpty && !isRefreshing {
-                    AppEmptyState(
-                        icon: AppIcons.noSpeakers,
-                        title: "No speakers found",
-                        subtitle: "Speakers will appear here after processing conversations"
-                    )
-                } else {
-                    LazyVStack(spacing: 12) {
-                        ForEach(speakers, id: \.id) { speaker in
-                            SpeakerCard(
-                                speaker: speaker,
+            // Unified Speaker List
+            if speakers.isEmpty && pineconeSpeakers.isEmpty && !isRefreshing && !isPineconeLoading {
+                AppEmptyState(
+                    icon: AppIcons.noSpeakers,
+                    title: "No speakers found",
+                    subtitle: "Speakers will appear here after processing conversations"
+                )
+            } else {
+                LazyVStack(spacing: 16) {
+                    // Linked Speakers Section (conversation speakers that have Pinecone links)
+                    let linkedSpeakers = speakers.filter { $0.pinecone_speaker_name != nil }
+                    if !linkedSpeakers.isEmpty {
+                        AppSectionHeader(
+                            title: "Linked Speakers",
+                            subtitle: "\(linkedSpeakers.count) speakers with voice training"
+                        )
+                        
+                        ForEach(linkedSpeakers, id: \.id) { speaker in
+                            // Find the matching Pinecone speaker
+                            let matchingPineconeSpeaker = pineconeSpeakers.first { 
+                                $0.name == speaker.pinecone_speaker_name 
+                            }
+                            
+                            LinkedSpeakerCard(
+                                conversationSpeaker: speaker,
+                                pineconeSpeaker: matchingPineconeSpeaker,
                                 speakerIDService: speakerIDService,
                                 onTrainSpeaker: { speakerName in
                                     addEmbeddingItem = AddEmbeddingItem(speakerName: speakerName)
-                                }
-                            ) {
-                                refreshSpeakers()
-                            }
+                                },
+                                onSpeakerUpdated: {
+                                    refreshSpeakers()
+                                    refreshPineconeSpeakers()
+                                },
+                                onDeleteSpeaker: deletePineconeSpeaker,
+                                onDeleteEmbedding: deletePineconeEmbedding
+                            )
+                        }
+                    }
+                    
+                    // Unlinked Conversation Speakers Section
+                    let unlinkedSpeakers = speakers.filter { $0.pinecone_speaker_name == nil }
+                    if !unlinkedSpeakers.isEmpty {
+                        AppSectionHeader(
+                            title: "Conversation Speakers",
+                            subtitle: "\(unlinkedSpeakers.count) speakers not yet trained"
+                        )
+                        
+                        ForEach(unlinkedSpeakers, id: \.id) { speaker in
+                            UnifiedSpeakerCard(
+                                speaker: .conversation(speaker),
+                                speakerIDService: speakerIDService,
+                                onTrainSpeaker: { speakerName in
+                                    addEmbeddingItem = AddEmbeddingItem(speakerName: speakerName)
+                                },
+                                onSpeakerUpdated: {
+                                    refreshSpeakers()
+                                },
+                                onDeleteSpeaker: nil,
+                                onDeleteEmbedding: nil
+                            )
+                        }
+                    }
+                    
+                    // Unlinked Voice Samples Section (Pinecone speakers not linked to conversation speakers)
+                    let unlinkedPineconeSpeakers = pineconeSpeakers.filter { pineconeSpeaker in
+                        !speakers.contains { $0.pinecone_speaker_name == pineconeSpeaker.name }
+                    }
+                    if !unlinkedPineconeSpeakers.isEmpty {
+                        AppSectionHeader(
+                            title: "Voice Samples Only",
+                            subtitle: "\(unlinkedPineconeSpeakers.count) training speakers without conversations"
+                        )
+                        
+                        ForEach(unlinkedPineconeSpeakers) { speaker in
+                            UnifiedSpeakerCard(
+                                speaker: .pinecone(speaker),
+                                speakerIDService: speakerIDService,
+                                onTrainSpeaker: { speakerName in
+                                    addEmbeddingItem = AddEmbeddingItem(speakerName: speakerName)
+                                },
+                                onSpeakerUpdated: {
+                                    refreshPineconeSpeakers()
+                                },
+                                onDeleteSpeaker: deletePineconeSpeaker,
+                                onDeleteEmbedding: deletePineconeEmbedding
+                            )
                         }
                     }
                 }
-                
-                if isRefreshing {
-                    AppLoadingState(message: "Loading speakers...")
-                }
-            } else {
-                // Pinecone Voice Samples
-                if pineconeSpeakers.isEmpty && !isPineconeLoading {
-                    AppEmptyState(
-                        icon: AppIcons.noSpeakers,
-                        title: "No voice samples found",
-                        subtitle: "Add voice samples to train speaker recognition"
-                    )
-                } else {
-                    ForEach(pineconeSpeakers) { speaker in
-                        PineconeSpeakerCard(
-                            speaker: speaker,
-                            onAddEmbedding: { speakerName in
-                                addEmbeddingItem = AddEmbeddingItem(speakerName: speakerName)
-                            },
-                            onDeleteSpeaker: deletePineconeSpeaker,
-                            onDeleteEmbedding: deletePineconeEmbedding
-                        )
-                    }
-                }
-                
-                if isPineconeLoading {
-                    AppLoadingState(message: "Loading voice samples...")
-                }
+            }
+            
+            if isRefreshing || isPineconeLoading {
+                AppLoadingState(message: "Loading speakers...")
             }
         }
         .refreshable {
@@ -119,7 +161,8 @@ struct SpeakersListView: View {
             }
         }
         .sheet(item: $addEmbeddingItem) { item in
-            if selectedSegment == 0 {
+            // Check if this is a conversation speaker or Pinecone speaker
+            if speakers.contains(where: { $0.name == item.speakerName }) {
                 // Training from conversation speakers
                 PineconeTrainSpeakerView(
                     speakerName: item.speakerName
@@ -243,6 +286,387 @@ struct SpeakersListView: View {
                 }
             } catch {
                 print("❌ Error deleting Pinecone embedding: \(error)")
+            }
+        }
+    }
+}
+
+// Unified speaker type to handle both conversation and Pinecone speakers
+enum UnifiedSpeaker: Identifiable {
+    case conversation(Speaker)
+    case pinecone(PineconeSpeaker)
+    
+    var id: String {
+        switch self {
+        case .conversation(let speaker):
+            return "conv_\(speaker.id)"
+        case .pinecone(let speaker):
+            return "pine_\(speaker.name)"
+        }
+    }
+    
+    var name: String {
+        switch self {
+        case .conversation(let speaker):
+            return speaker.name
+        case .pinecone(let speaker):
+            return speaker.name
+        }
+    }
+}
+
+struct LinkedSpeakerCard: View {
+    let conversationSpeaker: Speaker
+    let pineconeSpeaker: PineconeSpeaker?
+    let speakerIDService: SpeakerIDService
+    let onTrainSpeaker: (String) -> Void
+    let onSpeakerUpdated: () -> Void
+    let onDeleteSpeaker: ((String) -> Void)?
+    let onDeleteEmbedding: ((String) -> Void)?
+    
+    @State private var showingDetails = false
+    @State private var isExpanded = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(conversationSpeaker.name)
+                            .appHeadline()
+                        
+                        // Linked indicator
+                        Image(systemName: "link.circle.fill")
+                            .foregroundColor(.success)
+                            .font(.caption)
+                    }
+                    
+                    if let pineconeSpeekerName = conversationSpeaker.pinecone_speaker_name {
+                        Text("linked to: \(pineconeSpeekerName)")
+                            .appCaption()
+                            .foregroundColor(.success)
+                    }
+                    
+                    HStack(spacing: 12) {
+                        if let utteranceCount = conversationSpeaker.utterance_count {
+                            Text("\(utteranceCount) utterances")
+                                .appCaption()
+                        }
+                        
+                        if let totalDuration = conversationSpeaker.total_duration {
+                            Text(DurationUtilities.formatDurationCompact(TimeInterval(totalDuration)))
+                                .appCaption()
+                        }
+                        
+                        if let pineconeSpeaker = pineconeSpeaker {
+                            Text("\(pineconeSpeaker.embeddings.count) voice samples")
+                                .appCaption()
+                                .foregroundColor(.accent)
+                        }
+                    }
+                }
+                
+                Spacer()
+                
+                HStack(spacing: AppSpacing.small) {
+                    // Train button for conversation speakers
+                    if let utteranceCount = conversationSpeaker.utterance_count, utteranceCount > 0 {
+                        Button(action: {
+                            onTrainSpeaker(conversationSpeaker.name)
+                        }) {
+                            Image(systemName: "brain")
+                                .font(.title2)
+                                .foregroundColor(.accent)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    // Add embedding for Pinecone speakers
+                    if pineconeSpeaker != nil {
+                        Button(action: {
+                            onTrainSpeaker(conversationSpeaker.name)
+                        }) {
+                            Image(systemName: "plus.circle")
+                                .font(.title2)
+                                .foregroundColor(.success)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // Expand/collapse embeddings
+                        if let pinecone = pineconeSpeaker, !pinecone.embeddings.isEmpty {
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isExpanded.toggle()
+                                }
+                            }) {
+                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.title2)
+                                    .foregroundColor(.accent)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        
+                        // Delete speaker (only for Pinecone)
+                        if let onDeleteSpeaker = onDeleteSpeaker, let pineconeSpeekerName = conversationSpeaker.pinecone_speaker_name {
+                            Button(action: {
+                                onDeleteSpeaker(pineconeSpeekerName)
+                            }) {
+                                Image(systemName: "trash")
+                                    .font(.title2)
+                                    .foregroundColor(.destructive)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    
+                    // Detail chevron for conversation speakers
+                    Image(systemName: "chevron.right")
+                        .font(.caption)
+                        .foregroundColor(.secondaryText)
+                }
+            }
+            
+            // Expandable embeddings list for Pinecone speakers
+            if let pinecone = pineconeSpeaker, !pinecone.embeddings.isEmpty && isExpanded {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Voice Samples:")
+                        .appSubtitle()
+                    
+                    ForEach(pinecone.embeddings) { embedding in
+                        HStack {
+                            Text(embedding.id)
+                                .appCaption()
+                            
+                            Spacer()
+                            
+                            if let onDeleteEmbedding = onDeleteEmbedding {
+                                Button(action: {
+                                    onDeleteEmbedding(embedding.id)
+                                }) {
+                                    Image(systemName: "trash")
+                                        .font(.caption)
+                                        .foregroundColor(.destructive)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+                .padding(.top, 4)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding()
+        .background(Color.lightGrayBackground)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.cardBorder, lineWidth: 1)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            showingDetails = true
+        }
+        .sheet(isPresented: $showingDetails) {
+            SpeakerDetailView(
+                speaker: conversationSpeaker,
+                speakerIDService: speakerIDService,
+                onSpeakerUpdated: onSpeakerUpdated,
+                onTrainSpeaker: onTrainSpeaker
+            )
+        }
+    }
+}
+
+struct UnifiedSpeakerCard: View {
+    let speaker: UnifiedSpeaker
+    let speakerIDService: SpeakerIDService
+    let onTrainSpeaker: (String) -> Void
+    let onSpeakerUpdated: () -> Void
+    let onDeleteSpeaker: ((String) -> Void)?
+    let onDeleteEmbedding: ((String) -> Void)?
+    
+    @State private var showingDetails = false
+    @State private var isExpanded = false
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 6) {
+                        Text(speaker.name)
+                            .appHeadline()
+                        
+                        // Type indicator
+                        switch speaker {
+                        case .conversation(let convSpeaker):
+                            if convSpeaker.pinecone_speaker_name != nil {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.success)
+                                    .font(.caption)
+                            } else {
+                                Image(systemName: "circle")
+                                    .foregroundColor(.secondaryText)
+                                    .font(.caption)
+                            }
+                        case .pinecone:
+                            Image(systemName: "brain.head.profile")
+                                .foregroundColor(.accent)
+                                .font(.caption)
+                        }
+                    }
+                    
+                    // Speaker details
+                    switch speaker {
+                    case .conversation(let convSpeaker):
+                        if let pineconeSpeekerName = convSpeaker.pinecone_speaker_name {
+                            Text("linked to: \(pineconeSpeekerName)")
+                                .appCaption()
+                                .foregroundColor(.success)
+                        }
+                        
+                        HStack(spacing: 12) {
+                            if let utteranceCount = convSpeaker.utterance_count {
+                                Text("\(utteranceCount) utterances")
+                                    .appCaption()
+                            }
+                            
+                            if let totalDuration = convSpeaker.total_duration {
+                                Text(DurationUtilities.formatDurationCompact(TimeInterval(totalDuration)))
+                                    .appCaption()
+                            }
+                        }
+                        
+                    case .pinecone(let pineSpeaker):
+                        Text("\(pineSpeaker.embeddings.count) voice samples")
+                            .appCaption()
+                    }
+                }
+                
+                Spacer()
+                
+                HStack(spacing: AppSpacing.small) {
+                    // Inline actions based on speaker type
+                    switch speaker {
+                    case .conversation(let convSpeaker):
+                        // Train button for conversation speakers
+                        if let utteranceCount = convSpeaker.utterance_count, utteranceCount > 0 {
+                            Button(action: {
+                                onTrainSpeaker(convSpeaker.name)
+                            }) {
+                                Image(systemName: "brain")
+                                    .font(.title2)
+                                    .foregroundColor(.accent)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        
+                    case .pinecone(let pineSpeaker):
+                        // Add embedding for Pinecone speakers
+                        Button(action: {
+                            onTrainSpeaker(pineSpeaker.name)
+                        }) {
+                            Image(systemName: "plus.circle")
+                                .font(.title2)
+                                .foregroundColor(.success)
+                        }
+                        .buttonStyle(.plain)
+                        
+                        // Expand/collapse embeddings
+                        if !pineSpeaker.embeddings.isEmpty {
+                            Button(action: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    isExpanded.toggle()
+                                }
+                            }) {
+                                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                                    .font(.title2)
+                                    .foregroundColor(.accent)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        
+                        // Delete speaker (only for Pinecone)
+                        if let onDeleteSpeaker = onDeleteSpeaker {
+                            Button(action: {
+                                onDeleteSpeaker(pineSpeaker.name)
+                            }) {
+                                Image(systemName: "trash")
+                                    .font(.title2)
+                                    .foregroundColor(.destructive)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    
+                    // Detail chevron for conversation speakers
+                    if case .conversation = speaker {
+                        Image(systemName: "chevron.right")
+                            .font(.caption)
+                            .foregroundColor(.secondaryText)
+                    }
+                }
+            }
+            
+            // Expandable embeddings list for Pinecone speakers
+            if case .pinecone(let pineSpeaker) = speaker, !pineSpeaker.embeddings.isEmpty && isExpanded {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Voice Samples:")
+                        .appSubtitle()
+                    
+                    ForEach(pineSpeaker.embeddings) { embedding in
+                        HStack {
+                            Text(embedding.id)
+                                .appCaption()
+                            
+                            Spacer()
+                            
+                            if let onDeleteEmbedding = onDeleteEmbedding {
+                                Button(action: {
+                                    onDeleteEmbedding(embedding.id)
+                                }) {
+                                    Image(systemName: "trash")
+                                        .font(.caption)
+                                        .foregroundColor(.destructive)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+                .padding(.top, 4)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+        .padding()
+        .background(Color.lightGrayBackground)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.cardBorder, lineWidth: 1)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            // Only show details for conversation speakers
+            if case .conversation = speaker {
+                showingDetails = true
+            } else if case .pinecone(let pineSpeaker) = speaker, !pineSpeaker.embeddings.isEmpty {
+                // For Pinecone speakers, toggle expansion
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isExpanded.toggle()
+                }
+            }
+        }
+        .sheet(isPresented: $showingDetails) {
+            if case .conversation(let convSpeaker) = speaker {
+                SpeakerDetailView(
+                    speaker: convSpeaker,
+                    speakerIDService: speakerIDService,
+                    onSpeakerUpdated: onSpeakerUpdated,
+                    onTrainSpeaker: onTrainSpeaker
+                )
             }
         }
     }
@@ -792,6 +1216,7 @@ struct PineconeSpeakerCard: View {
     
     @State private var showingDeleteConfirmation = false
     @State private var isExpanded = false
+    @State private var showingDetails = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -893,7 +1318,6 @@ struct PineconeSpeakerCard: View {
         }
     }
 }
-
 
 struct PineconeAddEmbeddingView: View {
     let speakerName: String
@@ -1048,6 +1472,14 @@ struct PineconeTrainSpeakerView: View {
     @State private var isLoading = false
     @State private var errorMessage = ""
     @State private var showingDocumentPicker = false
+    @State private var existingUtterances: [SpeakerIDUtterance] = []
+    @State private var isLoadingUtterances = false
+    @State private var toggleStates: [String: Bool] = [:]
+    @State private var processingUtterances: Set<String> = []
+    @State private var audioPlayer: AVPlayer?
+    @State private var currentlyPlayingURL: String?
+    
+    private let speakerIDService = SpeakerIDService()
     
     var body: some View {
         Form {
@@ -1068,7 +1500,76 @@ struct PineconeTrainSpeakerView: View {
                 .padding(.vertical, 8)
             }
             
-            Section(header: Text("Voice Sample")) {
+            // Existing utterances section
+            if isLoadingUtterances {
+                Section(header: Text("Existing Voice Samples")) {
+                    HStack {
+                        ProgressView()
+                            .scaleEffect(0.8)
+                        Text("Loading existing utterances...")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+                    .padding(.vertical, 8)
+                }
+            } else if !existingUtterances.isEmpty {
+                Section(header: 
+                    HStack {
+                        Text("Existing Voice Samples")
+                        Spacer()
+                        Text("Use for Training")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                ) {
+                    ForEach(existingUtterances, id: \.id) { utterance in
+                        HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(utterance.text)
+                                    .font(.body)
+                                    .lineLimit(2)
+                                
+                                Text(utterance.start_time)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            Spacer()
+                            
+                            // Play button
+                            Button(action: {
+                                playUtterance(utterance)
+                            }) {
+                                Image(systemName: currentlyPlayingURL == utterance.audio_url ? "pause.circle.fill" : "play.circle.fill")
+                                    .font(.title2)
+                                    .foregroundColor(.accent)
+                            }
+                            .buttonStyle(.plain)
+                            
+                            if processingUtterances.contains(utterance.id) {
+                                HStack(spacing: 8) {
+                                    ProgressView()
+                                        .scaleEffect(0.7)
+                                    Text(toggleStates[utterance.id] == true ? "Adding..." : "Removing...")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                            } else {
+                                Toggle("", isOn: Binding(
+                                    get: { toggleStates[utterance.id] ?? utterance.included_in_pinecone },
+                                    set: { newValue in
+                                        toggleUtterance(utterance.id, include: newValue)
+                                    }
+                                ))
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            }
+            
+            Section(header: Text("Add New Voice Sample")) {
                 Button(action: {
                     showingDocumentPicker = true
                 }) {
@@ -1122,6 +1623,131 @@ struct PineconeTrainSpeakerView: View {
                 errorMessage = "Failed to select file: \(error.localizedDescription)"
             }
         }
+        .onAppear {
+            loadExistingUtterances()
+        }
+        .onDisappear {
+            cleanupAudioPlayer()
+        }
+    }
+    
+    private func loadExistingUtterances() {
+        isLoadingUtterances = true
+        
+        Task {
+            do {
+                // Get all conversations and find utterances for this speaker
+                let conversations = try await speakerIDService.getAllConversations()
+                var allUtterances: [SpeakerIDUtterance] = []
+                
+                // Get details for each conversation and collect utterances from this speaker
+                for conversation in conversations {
+                    do {
+                        let detail = try await speakerIDService.getConversationDetails(conversationId: conversation.conversation_id)
+                        let speakerUtterances = detail.utterances.filter { $0.speaker_name == speakerName }
+                        allUtterances.append(contentsOf: speakerUtterances)
+                    } catch {
+                        print("Failed to load conversation \(conversation.conversation_id): \(error)")
+                        continue
+                    }
+                }
+                
+                await MainActor.run {
+                    self.existingUtterances = allUtterances
+                    self.isLoadingUtterances = false
+                    
+                    // Initialize toggle states
+                    for utterance in allUtterances {
+                        self.toggleStates[utterance.id] = utterance.included_in_pinecone
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.isLoadingUtterances = false
+                    print("Failed to load utterances for speaker: \(error)")
+                }
+            }
+        }
+    }
+    
+    private func toggleUtterance(_ utteranceId: String, include: Bool) {
+        // Update local state immediately for responsive UI
+        toggleStates[utteranceId] = include
+        processingUtterances.insert(utteranceId)
+        
+        Task {
+            do {
+                _ = try await speakerIDService.toggleUtterancePineconeInclusion(
+                    utteranceId: utteranceId,
+                    includeInPinecone: include
+                )
+                print("✅ Successfully toggled utterance \(utteranceId) to \(include)")
+                
+                await MainActor.run {
+                    _ = self.processingUtterances.remove(utteranceId)
+                }
+            } catch {
+                // Revert local state on error
+                await MainActor.run {
+                    self.toggleStates[utteranceId] = !include
+                    self.processingUtterances.remove(utteranceId)
+                    self.errorMessage = "Failed to update utterance: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+    
+    private func playUtterance(_ utterance: SpeakerIDUtterance) {
+        if currentlyPlayingURL == utterance.audio_url {
+            // Already playing this utterance, pause it
+            cleanupAudioPlayer()
+            currentlyPlayingURL = nil
+            return
+        }
+        
+        cleanupAudioPlayer()
+        
+        let fullURL = getFullAudioURL(utterance.audio_url)
+        guard let audioURL = URL(string: fullURL), audioURL.scheme != nil else {
+            print("❌ Invalid audio URL: \(fullURL)")
+            return
+        }
+        
+        let playerItem = AVPlayerItem(url: audioURL)
+        audioPlayer = AVPlayer(playerItem: playerItem)
+        currentlyPlayingURL = utterance.audio_url
+        
+        // Add completion observer
+        NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: playerItem,
+            queue: .main
+        ) { _ in
+            DispatchQueue.main.async {
+                self.currentlyPlayingURL = nil
+            }
+        }
+        
+        audioPlayer?.play()
+    }
+    
+    private func getFullAudioURL(_ urlString: String) -> String {
+        if urlString.hasPrefix("http://") || urlString.hasPrefix("https://") {
+            return urlString
+        }
+        
+        let baseURL = AppConstants.baseURL
+        return baseURL + urlString
+    }
+    
+    private func cleanupAudioPlayer() {
+        audioPlayer?.pause()
+        
+        // Remove all notification observers
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .AVPlayerItemFailedToPlayToEndTime, object: nil)
+        
+        audioPlayer = nil
     }
     
     private func trainSpeaker() {
