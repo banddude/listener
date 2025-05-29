@@ -40,14 +40,20 @@ rm -rf ~/Library/Developer/Xcode/DerivedData/listener-*
 
 ```
 listener/
-├── Views/                    (All SwiftUI views)
-├── DesignSystem/             (Unified design system components)
+├── Views/                         (All SwiftUI views)
+│   ├── SharedUploadsView.swift    (Manage imported audio files)
+│   └── PineconeManagerView.swift  (Pinecone speaker management)
+├── DesignSystem/                  (Unified design system components)
 ├── VoiceActivityRecorder.swift    (Core audio capture)
 ├── SpeakerIDService.swift         (Backend API client) 
 ├── DataModels.swift               (API models)
 ├── AppNavigationManager.swift     (Cross-platform navigation)
+├── AppLifecycleManager.swift      (App lifecycle and background processing)
+├── SharedAudioManager.swift       (Shared container audio management)
 ├── CircularAudioBuffer.swift      (Audio buffering)
-└── listenerApp.swift              (App entry point)
+├── listenerApp.swift              (App entry point)
+└── ListenerShareExtension/        (iOS share extension)
+    └── ShareViewController.swift  (Share sheet audio handler)
 ```
 
 ## Core Architecture
@@ -81,6 +87,13 @@ listener/
 - macOS uses sidebar navigation with detail views
 - Shared navigation logic for conversation detail routing
 
+### Share Extension (iOS Only)
+- `ListenerShareExtension` target for iOS share sheet integration
+- Accepts audio files from other apps (Voice Memos, Files, etc.)
+- Validates audio using AVFoundation before import
+- Saves to shared container with metadata for main app processing
+- App group: `group.com.mikeshaffer.listener` for cross-app file sharing
+
 ## Key Backend API Endpoints
 
 ```
@@ -113,6 +126,8 @@ Key models in `DataModels.swift`:
 - `ConversationDetail` - Full conversation with utterances
 - `SpeakerIDUtterance` - Individual speech segment with speaker
 - `Speaker` - Speaker profile with Pinecone linking
+- `ShareMetadata` - Metadata for shared audio files
+- `SharedAudioFile` - Represents audio file imported via share extension
 
 ## Platform Differences
 
@@ -128,6 +143,8 @@ Key models in `DataModels.swift`:
 - **Background Processing**: App supports background audio monitoring
 - **Error Handling**: Consistent async/await pattern with proper error propagation
 - **No Tests**: Currently no automated test suite - relies on manual testing
+- **App Groups**: Configure `group.com.mikeshaffer.listener` for share extension
+- **Share Extension**: iOS-only feature for importing external audio files
 
 ## Code Quality
 

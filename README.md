@@ -37,6 +37,13 @@
 - Speaker assignment editing with bulk update options
 - Conversation renaming and organization
 
+### 📥 **Share Extension**
+- Import audio files from other apps via iOS share sheet
+- Works with Voice Memos, Files app, and any audio source
+- Supports common formats: mp3, wav, m4a, aac, ogg, flac, and more
+- Automatic audio validation and processing on import
+- Background processing when main app opens
+
 ### 👥 **Speaker Management**
 - View all identified speakers with statistics
 - Add new speakers manually
@@ -53,14 +60,18 @@
 ### App Structure
 ```
 listener/
-├── Views/                    (All SwiftUI views)
-├── DesignSystem/             (Unified UI components)
+├── Views/                         (All SwiftUI views)
+├── DesignSystem/                  (Unified UI components)
 ├── VoiceActivityRecorder.swift    (Core audio capture)
 ├── SpeakerIDService.swift         (Backend API client) 
 ├── DataModels.swift               (API models)
 ├── AppNavigationManager.swift     (Cross-platform navigation)
+├── AppLifecycleManager.swift      (App lifecycle and background processing)
+├── SharedAudioManager.swift       (Shared container audio management)
 ├── CircularAudioBuffer.swift      (Audio buffering)
-└── listenerApp.swift              (App entry point)
+├── listenerApp.swift              (App entry point)
+└── ListenerShareExtension/        (iOS share extension)
+    └── ShareViewController.swift  (Share sheet audio handler)
 ```
 
 ### Core Components
@@ -68,6 +79,8 @@ listener/
 - **Backend Integration**: RESTful API client for Speaker ID Server
 - **Navigation**: Cross-platform navigation manager supporting iOS tabs and macOS sidebar
 - **Design System**: Reusable SwiftUI components for consistent UI
+- **Share Extension**: iOS extension for importing audio files from other apps
+- **Shared Container**: App group for cross-app file sharing with metadata preservation
 
 ### Backend Integration
 **Base URL**: `https://speaker-id-server-production.up.railway.app`
@@ -130,6 +143,8 @@ This is a **production iOS/macOS app** that:
 - ✅ Displays processed conversations with speaker identification
 - ✅ Provides full conversation and speaker management UI
 - ✅ Works on both iOS and macOS with platform-appropriate UX
+- ✅ Accepts audio file imports via iOS share extension
+- ✅ Auto-processes shared audio files on app launch
 
 ## Related Documentation
 
