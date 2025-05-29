@@ -145,6 +145,8 @@ Key models in `DataModels.swift`:
 - **No Tests**: Currently no automated test suite - relies on manual testing
 - **App Groups**: Configure `group.com.mikeshaffer.listener` for share extension
 - **Share Extension**: iOS-only feature for importing external audio files
+- **Server Cache Timing**: Add 0.5s delays before refreshing UI after server updates to allow cache to update
+- **Share Extension App Store**: Never use TRUEPREDICATE - use specific NSExtensionActivationRule with audio/file limits
 
 ## Code Quality
 
