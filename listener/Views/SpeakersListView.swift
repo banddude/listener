@@ -166,35 +166,35 @@ struct SpeakerCard: View {
                     
                     // Pinecone link/unlink button
                     if isLinkedToPinecone {
-                        Button(action: {
-                            unlinkFromPinecone()
-                        }) {
-                            if isLinking {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                            } else {
-                                Text("Unlink")
-                                    .font(.caption)
-                                    .foregroundColor(.destructive)
+                        if isLinking {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                                .frame(width: 32, height: 32)
+                        } else {
+                            AppIconButton(
+                                iconName: "link.slash",
+                                size: 32,
+                                backgroundColor: .destructive,
+                                foregroundColor: .white
+                            ) {
+                                unlinkFromPinecone()
                             }
                         }
-                        .buttonStyle(.plain)
-                        .disabled(isLinking)
                     } else {
-                        Button(action: {
-                            loadPineconeSpeekersAndShowPicker()
-                        }) {
-                            if isLinking {
-                                ProgressView()
-                                    .scaleEffect(0.7)
-                            } else {
-                                Text("Link to Pinecone")
-                                    .font(.caption)
-                                    .foregroundColor(.accent)
+                        if isLinking {
+                            ProgressView()
+                                .scaleEffect(0.7)
+                                .frame(width: 32, height: 32)
+                        } else {
+                            AppIconButton(
+                                iconName: "link",
+                                size: 32,
+                                backgroundColor: .accent,
+                                foregroundColor: .white
+                            ) {
+                                loadPineconeSpeekersAndShowPicker()
                             }
                         }
-                        .buttonStyle(.plain)
-                        .disabled(isLinking)
                     }
                 }
             }
@@ -426,27 +426,15 @@ struct PineconeSpeakerPickerView: View {
                     .padding(.top)
                 
                 if isLoading || (!hasCompletedInitialLoad && availableSpeekers.isEmpty) {
-                    VStack(spacing: 12) {
-                        ProgressView()
-                            .scaleEffect(1.2)
-                        Text("Loading Pinecone speakers...")
-                            .foregroundColor(.secondary)
-                    }
-                    .frame(maxHeight: .infinity)
+                    AppLoadingState(message: "Loading Pinecone speakers...")
+                        .frame(maxHeight: .infinity)
                 } else if availableSpeekers.isEmpty {
                     VStack(spacing: 16) {
-                        Image(systemName: "person.2.slash")
-                            .font(.system(size: 48))
-                            .foregroundColor(.gray)
-                        
-                        Text("No Pinecone speakers found")
-                            .font(.headline)
-                            .foregroundColor(.secondary)
-                        
-                        Text("Enter the Pinecone speaker name manually")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
+                        AppEmptyState(
+                            icon: "person.2.slash",
+                            title: "No Pinecone speakers found",
+                            subtitle: "Enter the Pinecone speaker name manually"
+                        )
                         
                         TextField("Pinecone Speaker Name", text: $manualSpeakerName)
                             .textFieldStyle(RoundedBorderTextFieldStyle())
