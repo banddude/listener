@@ -9,7 +9,6 @@ struct SpeakersListView: View {
     @State private var isRefreshing = false
     @State private var isPineconeLoading = false
     @State private var showingAddSpeaker = false
-    @State private var showingAddPineconeSpeaker = false
     @State private var addEmbeddingItem: AddEmbeddingItem?
     @State private var newSpeakerName = ""
     @State private var errorMessage = ""
@@ -31,19 +30,17 @@ struct SpeakersListView: View {
                     Spacer()
                     
                     HStack(spacing: AppSpacing.small) {
-                        // Add button
-                        Button(action: {
-                            if selectedSegment == 0 {
+                        // Add button (only for conversation speakers)
+                        if selectedSegment == 0 {
+                            Button(action: {
                                 showingAddSpeaker = true
-                            } else {
-                                showingAddPineconeSpeaker = true
+                            }) {
+                                Image(systemName: AppIcons.add)
+                                    .font(.title2)
+                                    .foregroundColor(.success)
                             }
-                        }) {
-                            Image(systemName: AppIcons.add)
-                                .font(.title2)
-                                .foregroundColor(.success)
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 
@@ -70,7 +67,10 @@ struct SpeakersListView: View {
                         ForEach(speakers, id: \.id) { speaker in
                             SpeakerCard(
                                 speaker: speaker,
-                                speakerIDService: speakerIDService
+                                speakerIDService: speakerIDService,
+                                onTrainSpeaker: { speakerName in
+                                    addEmbeddingItem = AddEmbeddingItem(speakerName: speakerName)
+                                }
                             ) {
                                 refreshSpeakers()
                             }
@@ -118,18 +118,23 @@ struct SpeakersListView: View {
                 refreshSpeakers()
             }
         }
-        .sheet(isPresented: $showingAddPineconeSpeaker) {
-            PineconeAddSpeakerView {
-                showingAddPineconeSpeaker = false
-                refreshPineconeSpeakers()
-            }
-        }
         .sheet(item: $addEmbeddingItem) { item in
-            PineconeAddEmbeddingView(
-                speakerName: item.speakerName
-            ) {
-                addEmbeddingItem = nil
-                refreshPineconeSpeakers()
+            if selectedSegment == 0 {
+                // Training from conversation speakers
+                PineconeTrainSpeakerView(
+                    speakerName: item.speakerName
+                ) {
+                    addEmbeddingItem = nil
+                    refreshPineconeSpeakers()
+                }
+            } else {
+                // Adding more samples to existing Pinecone speaker
+                PineconeAddEmbeddingView(
+                    speakerName: item.speakerName
+                ) {
+                    addEmbeddingItem = nil
+                    refreshPineconeSpeakers()
+                }
             }
         }
         .onAppear {
@@ -246,6 +251,7 @@ struct SpeakersListView: View {
 struct SpeakerCard: View {
     let speaker: Speaker
     let speakerIDService: SpeakerIDService
+    let onTrainSpeaker: (String) -> Void
     let onSpeakerUpdated: () -> Void
     
     @State private var showingDetails = false
@@ -298,7 +304,19 @@ struct SpeakerCard: View {
                 Spacer()
                 
                 HStack(spacing: AppSpacing.small) {
-                    // Pinecone link/unlink button (leftmost)
+                    // Train button (only if speaker has utterances)
+                    if let utteranceCount = speaker.utterance_count, utteranceCount > 0 {
+                        Button(action: {
+                            onTrainSpeaker(speaker.name)
+                        }) {
+                            Image(systemName: "brain")
+                                .font(.title2)
+                                .foregroundColor(.accent)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    
+                    // Pinecone link/unlink button
                     if isLinking {
                         ProgressView()
                             .scaleEffect(0.7)
@@ -807,137 +825,6 @@ struct PineconeSpeakerCard: View {
     }
 }
 
-struct PineconeAddSpeakerView: View {
-    let onSpeakerAdded: () -> Void
-    
-    @State private var speakerName = ""
-    @State private var selectedAudioURL: URL?
-    @State private var isLoading = false
-    @State private var errorMessage = ""
-    @State private var showingDocumentPicker = false
-    
-    var body: some View {
-        Form {
-            Section(header: Text("Speaker Details")) {
-                TextField("Speaker Name", text: $speakerName)
-            }
-            
-            Section(header: Text("Voice Sample")) {
-                Button(action: {
-                    showingDocumentPicker = true
-                }) {
-                    HStack {
-                        Image(systemName: "mic")
-                        if let url = selectedAudioURL {
-                            Text(url.lastPathComponent)
-                                .foregroundColor(.primary)
-                        } else {
-                            Text("Choose Audio File")
-                                .foregroundColor(Color.accent)
-                        }
-                        Spacer()
-                    }
-                }
-            }
-            
-            if !errorMessage.isEmpty {
-                Section {
-                    Text(errorMessage)
-                        .foregroundColor(Color.destructive)
-                }
-            }
-        }
-        .navigationTitle("Add Speaker")
-        .toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") {
-                    onSpeakerAdded()
-                }
-            }
-            
-            ToolbarItem(placement: .confirmationAction) {
-                Button("Add") {
-                    addSpeaker()
-                }
-                .disabled(speakerName.isEmpty || selectedAudioURL == nil || isLoading)
-            }
-        }
-        .fileImporter(
-            isPresented: $showingDocumentPicker,
-            allowedContentTypes: [.audio],
-            allowsMultipleSelection: false
-        ) { result in
-            switch result {
-            case .success(let urls):
-                if let url = urls.first {
-                    selectedAudioURL = url
-                }
-            case .failure(let error):
-                errorMessage = "Failed to select file: \(error.localizedDescription)"
-            }
-        }
-    }
-    
-    private func addSpeaker() {
-        guard let audioURL = selectedAudioURL else { return }
-        
-        isLoading = true
-        errorMessage = ""
-        
-        Task {
-            do {
-                let url = URL(string: "\(AppConstants.baseURL)/api/pinecone/speakers")!
-                var request = URLRequest(url: url)
-                request.httpMethod = "POST"
-                
-                let boundary = UUID().uuidString
-                request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-                
-                let audioData = try Data(contentsOf: audioURL)
-                let formData = createMultipartFormData(
-                    boundary: boundary,
-                    speakerName: speakerName,
-                    audioData: audioData,
-                    fileName: audioURL.lastPathComponent
-                )
-                
-                let (_, response) = try await URLSession.shared.upload(for: request, from: formData)
-                
-                guard let httpResponse = response as? HTTPURLResponse,
-                      httpResponse.statusCode == 200 else {
-                    throw URLError(.badServerResponse)
-                }
-                
-                await MainActor.run {
-                    self.onSpeakerAdded()
-                }
-            } catch {
-                await MainActor.run {
-                    self.errorMessage = "Failed to add speaker: \(error.localizedDescription)"
-                    self.isLoading = false
-                }
-            }
-        }
-    }
-    
-    private func createMultipartFormData(boundary: String, speakerName: String, audioData: Data, fileName: String) -> Data {
-        var formData = Data()
-        
-        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
-        formData.append("Content-Disposition: form-data; name=\"speaker_name\"\r\n\r\n".data(using: .utf8)!)
-        formData.append("\(speakerName)\r\n".data(using: .utf8)!)
-        
-        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
-        formData.append("Content-Disposition: form-data; name=\"audio_file\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
-        formData.append("Content-Type: audio/mpeg\r\n\r\n".data(using: .utf8)!)
-        formData.append(audioData)
-        formData.append("\r\n".data(using: .utf8)!)
-        
-        formData.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        
-        return formData
-    }
-}
 
 struct PineconeAddEmbeddingView: View {
     let speakerName: String
@@ -1059,6 +946,152 @@ struct PineconeAddEmbeddingView: View {
             } catch {
                 await MainActor.run {
                     self.errorMessage = "Failed to add embedding: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+            }
+        }
+    }
+    
+    private func createMultipartFormData(boundary: String, speakerName: String, audioData: Data, fileName: String) -> Data {
+        var formData = Data()
+        
+        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+        formData.append("Content-Disposition: form-data; name=\"speaker_name\"\r\n\r\n".data(using: .utf8)!)
+        formData.append("\(speakerName)\r\n".data(using: .utf8)!)
+        
+        formData.append("--\(boundary)\r\n".data(using: .utf8)!)
+        formData.append("Content-Disposition: form-data; name=\"audio_file\"; filename=\"\(fileName)\"\r\n".data(using: .utf8)!)
+        formData.append("Content-Type: audio/mpeg\r\n\r\n".data(using: .utf8)!)
+        formData.append(audioData)
+        formData.append("\r\n".data(using: .utf8)!)
+        
+        formData.append("--\(boundary)--\r\n".data(using: .utf8)!)
+        
+        return formData
+    }
+}
+
+struct PineconeTrainSpeakerView: View {
+    let speakerName: String
+    let onEmbeddingAdded: () -> Void
+    
+    @State private var selectedAudioURL: URL?
+    @State private var isLoading = false
+    @State private var errorMessage = ""
+    @State private var showingDocumentPicker = false
+    
+    var body: some View {
+        Form {
+            Section {
+                HStack {
+                    Image(systemName: "brain")
+                        .foregroundColor(Color.accent)
+                        .font(.title)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Train voice recognition for:")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                        Text(speakerName)
+                            .font(.headline)
+                    }
+                    Spacer()
+                }
+                .padding(.vertical, 8)
+            }
+            
+            Section(header: Text("Voice Sample")) {
+                Button(action: {
+                    showingDocumentPicker = true
+                }) {
+                    HStack {
+                        Image(systemName: "mic")
+                        if let url = selectedAudioURL {
+                            Text(url.lastPathComponent)
+                                .foregroundColor(.primary)
+                        } else {
+                            Text("Choose Audio File")
+                                .foregroundColor(Color.accent)
+                        }
+                        Spacer()
+                    }
+                }
+            }
+            
+            if !errorMessage.isEmpty {
+                Section {
+                    Text(errorMessage)
+                        .foregroundColor(Color.destructive)
+                }
+            }
+        }
+        .navigationTitle("Train Speaker")
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Cancel") {
+                    onEmbeddingAdded()
+                }
+            }
+            
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Train") {
+                    trainSpeaker()
+                }
+                .disabled(selectedAudioURL == nil || isLoading)
+            }
+        }
+        .fileImporter(
+            isPresented: $showingDocumentPicker,
+            allowedContentTypes: [.audio],
+            allowsMultipleSelection: false
+        ) { result in
+            switch result {
+            case .success(let urls):
+                if let url = urls.first {
+                    selectedAudioURL = url
+                }
+            case .failure(let error):
+                errorMessage = "Failed to select file: \(error.localizedDescription)"
+            }
+        }
+    }
+    
+    private func trainSpeaker() {
+        guard let audioURL = selectedAudioURL else { return }
+        
+        isLoading = true
+        errorMessage = ""
+        
+        Task {
+            do {
+                // Use the speakers endpoint which creates speaker if it doesn't exist
+                let url = URL(string: "\(AppConstants.baseURL)/api/pinecone/speakers")!
+                var request = URLRequest(url: url)
+                request.httpMethod = "POST"
+                
+                let boundary = UUID().uuidString
+                request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+                
+                let audioData = try Data(contentsOf: audioURL)
+                let formData = createMultipartFormData(
+                    boundary: boundary,
+                    speakerName: speakerName,
+                    audioData: audioData,
+                    fileName: audioURL.lastPathComponent
+                )
+                
+                let (_, response) = try await URLSession.shared.upload(for: request, from: formData)
+                
+                guard let httpResponse = response as? HTTPURLResponse,
+                      httpResponse.statusCode == 200 else {
+                    throw URLError(.badServerResponse)
+                }
+                
+                await MainActor.run {
+                    self.onEmbeddingAdded()
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = "Failed to train speaker: \(error.localizedDescription)"
                     self.isLoading = false
                 }
             }
