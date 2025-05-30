@@ -215,9 +215,9 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
         silenceTimer?.invalidate()
         clipUpdateTimer?.invalidate()
         
-        // Finish any current recording
+        // Cancel any current recording without saving (user manually stopped)
         if isRecordingClip {
-            finishCurrentClip()
+            cancelCurrentRecording()
         }
         
         DispatchQueue.main.async {
@@ -434,14 +434,14 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
         isRecordingToFile = false
         
         let actualSpeechDuration = endTime.timeIntervalSince(startTime)
-        let clipDuration = actualSpeechDuration + 4.0  // 2 seconds before + 2 seconds after
+        let clipDuration = actualSpeechDuration + 2.0  // 2 seconds after
         print("🎯 Finishing clip - Speech: \(String(format: "%.1f", actualSpeechDuration))s, Total: \(String(format: "%.1f", clipDuration))s, HasSpeech: \(hasMeaningfulSpeech)")
         print("🔍 Save conditions - HasSpeech: \(hasMeaningfulSpeech), Speech > 3.0s: \(actualSpeechDuration > 3.0)")
         
-        // Always save if we're actively recording (isRecordingClip was true) OR have meaningful speech
-        // This ensures long recordings don't get lost due to speech recognition restarts
-        let shouldSave = hasMeaningfulSpeech || isRecordingClip
-        print("🔍 Final save decision - ShouldSave: \(shouldSave) (HasSpeech: \(hasMeaningfulSpeech), WasRecording: \(isRecordingClip))")
+        // Only save if we have actual speech content (not just silence)
+        let hasActualSpeech = actualSpeechDuration > 0.5 && hasMeaningfulSpeech
+        let shouldSave = hasActualSpeech && isRecordingClip
+        print("🔍 Final save decision - ShouldSave: \(shouldSave) (HasActualSpeech: \(hasActualSpeech), Duration: \(String(format: "%.1f", actualSpeechDuration))s, WasRecording: \(isRecordingClip))")
         
         if shouldSave {
             // Get pre-recording audio from circular buffer (if available)
@@ -458,17 +458,10 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
                         print("🔍 Main audio size: \(mainAudioData.count) bytes")
                         
                         if !mainAudioData.isEmpty {
-                            // Combine pre-recording + main recording + post silence
-                            if let preAudio = preAudioData {
-                                let combinedAudio = combineAudioData(preAudio: preAudio, mainAudio: mainAudioData)
-                                saveClipToDisk(audioData: combinedAudio, startTime: startTime)
-                                print("✅ Saved combined audio: \(combinedAudio.count) bytes")
-                            } else {
-                                // No pre-audio available (too old), just save main recording
-                                let audioData = createWAVFile(from: mainAudioData)
-                                saveClipToDisk(audioData: audioData, startTime: startTime)
-                                print("✅ Saved main audio only: \(audioData.count) bytes")
-                            }
+                            // Main recording already includes the speech, just save it
+                            let audioData = createWAVFile(from: mainAudioData)
+                            saveClipToDisk(audioData: audioData, startTime: startTime)
+                            print("✅ Saved main audio: \(audioData.count) bytes")
                         } else {
                             // Fall back to just pre-audio if main recording is empty
                             if let preAudio = preAudioData {
@@ -593,6 +586,13 @@ class VoiceActivityRecorder: NSObject, ObservableObject {
         lastSpeechTime = nil
         currentClipDuration = 0
         hasMeaningfulSpeech = false
+        isRecordingToFile = false
+        
+        // Clean up temp file if it exists
+        if let tempFileURL = activeRecordingFileURL {
+            try? FileManager.default.removeItem(at: tempFileURL)
+            activeRecordingFileURL = nil
+        }
     }
     
     private func cancelCurrentRecording() {

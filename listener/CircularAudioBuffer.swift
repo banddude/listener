@@ -51,7 +51,8 @@ class CircularAudioBuffer {
         
         for i in 0..<frameCount {
             let sample = channelData[i]
-            let pcmSample = Int16(max(-32_768, min(32_767, sample * 32_767)))
+            let clampedSample = max(-1.0, min(1.0, sample))
+            let pcmSample = Int16(clampedSample * 32_767.0)
             
             withUnsafeBytes(of: pcmSample.littleEndian) { bytes in
                 pcmData.append(contentsOf: bytes)
