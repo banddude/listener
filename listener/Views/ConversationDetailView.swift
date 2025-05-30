@@ -515,8 +515,8 @@ struct ConversationDetailContent: View {
                 try await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
                 
                 await MainActor.run {
-                    // Notify the parent to refresh the conversations list after delay
-                    print("🔄 ConversationDetailView: Calling onConversationUpdated callback to refresh parent (with delay)")
+                    // Trigger a full server refresh of the conversations list
+                    print("🔄 ConversationDetailView: Triggering server refresh after name update")
                     onConversationUpdated?()
                 }
                 

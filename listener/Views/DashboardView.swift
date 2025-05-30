@@ -7,6 +7,7 @@ struct DashboardView: View {
     @State private var conversations: [BackendConversationSummary] = []
     @State private var isLoading = false
     @State private var errorMessage = ""
+    @State private var refreshID = UUID()
     
     var body: some View {
         VStack(spacing: 0) {
@@ -72,6 +73,7 @@ struct DashboardView: View {
                         ) {
                                 loadData()
                         }
+                        .id(refreshID)
                     case .speakers:
                         SpeakersListView(speakerIDService: speakerIDService)
                     case .sharedUploads:
@@ -91,6 +93,7 @@ struct DashboardView: View {
         }
     }
     
+    
     private func loadData() {
         print("🔄 DashboardView: loadData() called - refreshing conversations")
         isLoading = true
@@ -98,14 +101,20 @@ struct DashboardView: View {
         
         Task {
             do {
-                async let conversationsData = speakerIDService.getAllConversations()
-                
-                let loadedConversations = try await conversationsData
+                let loadedConversations = try await speakerIDService.getAllConversations()
                 
                 await MainActor.run {
                     print("✅ DashboardView: Loaded \(loadedConversations.count) conversations")
+                    print("🔄 DashboardView: Force updating conversations array")
+                    
+                    // Force SwiftUI to recognize this as a change
+                    self.conversations = []
                     self.conversations = loadedConversations
+                    self.refreshID = UUID() // Force view refresh
                     self.isLoading = false
+                    
+                    print("✅ DashboardView: Conversations array updated, count: \(self.conversations.count)")
+                    print("🔄 DashboardView: Generated new refreshID to force UI update")
                 }
             } catch {
                 await MainActor.run {

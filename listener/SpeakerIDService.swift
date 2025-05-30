@@ -87,7 +87,23 @@ class SpeakerIDService: ObservableObject {
     
     func getAllConversations() async throws -> [BackendConversationSummary] {
         let url = URL(string: "\(baseURL)/api/conversations")!
-        return try await performRequest(url: url, responseType: [BackendConversationSummary].self)
+        
+        var request = URLRequest(url: url)
+        request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              200...299 ~= httpResponse.statusCode else {
+            throw SpeakerIDError.serverError((response as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+        
+        let conversations = try JSONDecoder().decode([BackendConversationSummary].self, from: data)
+        print("📋 getAllConversations (cache bypassed) returned \(conversations.count) conversations:")
+        for conv in conversations.prefix(3) {
+            print("   - \(conv.id): \(conv.display_name ?? "nil")")
+        }
+        return conversations
     }
     
     // MARK: - Speaker Management
@@ -591,6 +607,38 @@ class SpeakerIDService: ObservableObject {
         return try JSONDecoder().decode(ConversationResponse.self, from: data)
     }
     
+    
+    private func performRequestWithCacheBusting<T: Codable>(
+        url: URL,
+        method: String = "GET",
+        body: Data? = nil,
+        responseType: T.Type
+    ) async throws -> T {
+        var request = URLRequest(url: url)
+        request.httpMethod = method
+        
+        // Add cache-busting headers
+        request.setValue("no-cache", forHTTPHeaderField: "Cache-Control")
+        request.setValue("no-cache", forHTTPHeaderField: "Pragma")
+        request.setValue("0", forHTTPHeaderField: "Expires")
+        
+        if let body = body {
+            request.httpBody = body
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        }
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw SpeakerIDError.invalidResponse
+        }
+        
+        guard 200...299 ~= httpResponse.statusCode else {
+            throw SpeakerIDError.serverError(httpResponse.statusCode)
+        }
+        
+        return try JSONDecoder().decode(responseType, from: data)
+    }
     
     private func performRequest<T: Codable>(
         url: URL,
