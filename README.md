@@ -1,5 +1,7 @@
 # Listener Pro - iOS Audio Recording & Speaker ID App
 
+> **Retired prototype / reference only.** Listener Pro's recording, transcription, diarization, speaker/people management, summaries, durable uploads, and conversation UI have been folded into [banddude/officeadmin-books](https://github.com/banddude/officeadmin-books) and the OfficeAdmin iOS/Mac apps. Do not start new product work in this repository; it is retained only as historical reference until archival.
+
 ## Overview
 
 **Listener Pro** is a cross-platform iOS/macOS SwiftUI app that transforms your device into an intelligent meeting companion. It records audio with voice activity detection, uploads conversations to a Speaker ID backend for processing, and provides conversation management with speaker identification.
